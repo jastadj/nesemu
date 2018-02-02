@@ -9,7 +9,9 @@ class C6502
 private:
 
     // memory
-    uint8_t m_Mem[0xffff];
+    uint8_t *m_Mem;
+    unsigned int m_MemSize;
+
     // memory map
     // 0x0000 - 0x00ff : zero page
     // 0x0100 - 0x01ff : stack
@@ -45,7 +47,9 @@ private:
     //
     bool init();
 
+    void execute(uint8_t opcode);
+
 public:
-    C6502();
+    C6502(uint8_t **memory, unsigned int memory_size);
 };
 #endif // CLASS_C6502
