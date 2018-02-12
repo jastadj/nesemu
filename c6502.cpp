@@ -204,6 +204,10 @@ uint8_t *C6502::getAddress(ADDRESS_MODE amode)
 {
     switch(amode)
     {
+    // accumulator address
+    case ACCUMULATOR:
+        return &m_RegA;
+        break;
     // immediate gets next mem byte
     case IMMEDIATE:
         m_ImmediateTemp = m_Mem[m_RegPC + 1];
@@ -247,6 +251,7 @@ uint8_t *C6502::getAddress(ADDRESS_MODE amode)
         }
         break;
     default:
+        std::cout << "Error, access mode " << amode << " is undefined.  Returning NULL." << std::endl;
         return NULL;
         break;
     }
@@ -423,20 +428,11 @@ void C6502::ASL(ADDRESS_MODE amode) // null = accumulator
             break;
     }
 
-    if(!addr)
-    {
-        setFlag(FLAG_CARRY, m_RegA & 0x80);
-        m_RegA = (m_RegA << 1) & 0xff;
-        setFlag(FLAG_ZERO, m_RegA == 0x00);
-        setFlag(FLAG_SIGN, m_RegA & 0x80);
-    }
-    else
-    {
-        setFlag(FLAG_CARRY, *addr & 0x80);
-        *addr = (*addr << 1) & 0xff;
-        setFlag(FLAG_ZERO, *addr == 0x00);
-        setFlag(FLAG_SIGN, *addr & 0x80);
-    }
+    setFlag(FLAG_CARRY, *addr & 0x80);
+    *addr = (*addr << 1) & 0xff;
+    setFlag(FLAG_ZERO, *addr == 0x00);
+    setFlag(FLAG_SIGN, *addr & 0x80);
+
 }
 
 // load accumator with memory, a = m
