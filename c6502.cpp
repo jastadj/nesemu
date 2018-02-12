@@ -112,6 +112,11 @@ bool C6502::execute(uint8_t opcode)
         ASL(ABSOLUTE_X);
         break;
 
+    // BCC - branch on carry clear (c==0)
+    case 0x90:
+        BCC(RELATIVE);
+        break;
+
     // .....
 
     // LDA - Load accumulator with memory
@@ -248,6 +253,13 @@ uint8_t *C6502::getAddress(ADDRESS_MODE amode)
         {
             uint16_t lobyte = m_Mem[m_RegPC + 1];
             return &m_Mem[  (m_Mem[lobyte+1] << 8) + m_Mem[lobyte] + m_RegY ];
+        }
+        break;
+    case RELATIVE:
+        {
+            int8_t offset = m_Mem[ m_RegPC + 1];
+            int32_t pc = m_RegPC + offset;
+            return &m_Mem[ uint16_t(pc)];
         }
         break;
     default:
@@ -390,7 +402,7 @@ void C6502::AND(ADDRESS_MODE amode)
     setFlag(FLAG_ZERO, (m_RegA == 0x0));
 }
 
-// shift left one bit (memory or accumulator)
+// ASL shift left one bit (memory or accumulator)
 // M|A << 1
 void C6502::ASL(ADDRESS_MODE amode) // null = accumulator
 {
@@ -433,6 +445,39 @@ void C6502::ASL(ADDRESS_MODE amode) // null = accumulator
     setFlag(FLAG_ZERO, *addr == 0x00);
     setFlag(FLAG_SIGN, *addr & 0x80);
 
+}
+
+// BCC branch on carry clear
+// branch if c == 0
+void C6502::BCC(ADDRESS_MODE amode)
+{
+    need to test this
+    switch(amode)
+    {
+        case RELATIVE:
+            m_Cycles += 2;
+            m_RegPC += 2;
+        break;
+        default:
+            {
+                std::stringstream emsg;
+                emsg << "BCC error address mode @ PC:" << std::hex << "0x" << m_RegPC;
+                printError(emsg.str());
+            }
+            return;
+            break;
+    }
+
+    if(getFlag(FLAG_CARRY))
+    {
+        int8_t offset = m_Mem[ (m_RegPC-2) + 1];
+        int32_t pc = (m_RegPC-2) + offset;
+
+        if( ( (m_RegPC-2) & 0xff00) != ( pc & 0xff00) ) m_Cycles += 2;
+        else m_Cycles += 1;
+
+        m_RegPC = uint16_t(pc);
+    }
 }
 
 // load accumator with memory, a = m

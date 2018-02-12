@@ -16,7 +16,7 @@ enum STAT_FLAG{FLAG_CARRY, FLAG_ZERO, FLAG_INTERRUPT_ENABLE, FLAG_DECIMAL_MODE, 
                FLAG_NOT_USED, FLAG_OVERFLOW, FLAG_SIGN};
 
 enum ADDRESS_MODE{IMMEDIATE, ZERO_PAGE, ZERO_PAGE_X, ZERO_PAGE_Y, ABSOLUTE, ABSOLUTE_X, ABSOLUTE_Y, INDIRECT_X,
-                  INDIRECT_Y, ACCUMULATOR};
+                  INDIRECT_Y, ACCUMULATOR, RELATIVE};
 
 class C6502
 {
@@ -77,6 +77,7 @@ private:
     void ADC(ADDRESS_MODE amode); // add accumulator + operand + carry -> accumulator
     void AND(ADDRESS_MODE amode); // and memory with accumulator -> accumulator
     void ASL(ADDRESS_MODE amode); // shift accumulator or memory left <<
+    void BCC(ADDRESS_MODE amode); // branch on carry clear, branch if carry flag == 0
     // ....
     void LDA(ADDRESS_MODE amode); // load accumulator with memory, m -> a
     void LDX(ADDRESS_MODE amode); // load register x with memory, m -> reg x
