@@ -149,7 +149,7 @@ uint8_t *C6502::getAddress(ADDRESS_MODE amode)
         break;
     // zero page gets address of 0x00YY where YY is next mem byte
     case ZERO_PAGE:
-        return &m_Mem[m_RegPC + 1];
+        return &m_Mem[ m_Mem[m_RegPC + 1] ];
         break;
     // zero page x gets address of 0x00YY where YY is REGX + next mem byte
     case ZERO_PAGE_X:
@@ -496,6 +496,7 @@ void C6502::debugConsole()
         }
         else if(words[0] == "reset")
         {
+            std::cout << "Resetting C6502..." << std::endl;
             init();
         }
         else if(words[0] == "clearmem")
@@ -541,7 +542,7 @@ void C6502::debugConsole()
                     // write all memory to file, stopping at last non-zero address
                     for(int i = 0; i <= lastentry; i++) ofile.put( (unsigned char)( int(m_Mem[i])) );
                     ofile.close();
-                    std::cout << "Wrote " << std::dec << lastentry << " bytes to " << words[1] << std::endl;
+                    std::cout << "Wrote " << std::dec << lastentry + 1 << " bytes to " << words[1] << std::endl;
 
                 }
                 else std::cout << "Error opening file " << words[1] << std::endl;
@@ -580,6 +581,10 @@ void C6502::debugConsole()
 
             }
             else std::cout << "Incorrect parameters : loadmem <file> [offset]" << std::endl;
+        }
+        else
+        {
+            std::cout << "Unknown command - type help" << std::endl;
         }
     }
 }
