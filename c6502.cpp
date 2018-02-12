@@ -625,6 +625,7 @@ void C6502::debugConsole()
             std::cout << "clearmem - clear all memory" << std::endl;
             std::cout << "dumpmem [file] - dump memory, optionally to file" << std::endl;
             std::cout << "loadmem <file> [offset] - load memory from file at optional offset" << std::endl;
+            std::cout << "seta <byte> - set accumulator" << std::endl;
             std::cout << "setx <byte> - set register x" << std::endl;
             std::cout << "sety <byte> - set register y" << std::endl;
             std::cout << "setpc <address> - set program counter to address" << std::endl;
@@ -795,6 +796,25 @@ void C6502::debugConsole()
             }
             else std::cout << "Incorrect parameters : loadmem <file> [offset]" << std::endl;
         }
+        else if(words[0] == "seta")
+        {
+            if(words.size() == 2)
+            {
+                int val;
+
+                std::stringstream bss;
+                bss << std::hex << words[1];
+
+                bss >> val;
+                if( val <= 0xff)
+                {
+                    m_RegA = val;
+                    std::cout << "Accumulator = " << std::hex << std::setfill('0') << std::setw(2) << int(m_RegA) << std::endl;
+                }
+                else std::cout << "Value is larger than 1 byte : " << val << std::endl;
+            }
+            else std::cout << "Invalid parameters." << std::endl;
+        }
         else if(words[0] == "setx")
         {
             if(words.size() == 2)
@@ -802,7 +822,7 @@ void C6502::debugConsole()
                 int val;
 
                 std::stringstream bss;
-                bss << words[1];
+                bss << std::hex << words[1];
 
                 bss >> val;
                 if( val <= 0xff)
@@ -821,7 +841,7 @@ void C6502::debugConsole()
                 int val;
 
                 std::stringstream bss;
-                bss << words[1];
+                bss << std::hex << words[1];
 
                 bss >> val;
                 if( val <= 0xff)
