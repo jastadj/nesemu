@@ -15,8 +15,8 @@
 enum STAT_FLAG{FLAG_CARRY, FLAG_ZERO, FLAG_INTERRUPT_ENABLE, FLAG_DECIMAL_MODE, FLAG_SOFTWARE_INTERRUPT,
                FLAG_NOT_USED, FLAG_OVERFLOW, FLAG_SIGN};
 
-enum ADDRESS_MODE{IMMEDIATE, ZERO_PAGE, ZERO_PAGE_X, ABSOLUTE, ABSOLUTE_X, ABSOLUTE_Y, INDIRECT_X, INDIRECT_Y,
-                  ACCUMULATOR};
+enum ADDRESS_MODE{IMMEDIATE, ZERO_PAGE, ZERO_PAGE_X, ZERO_PAGE_Y, ABSOLUTE, ABSOLUTE_X, ABSOLUTE_Y, INDIRECT_X,
+                  INDIRECT_Y, ACCUMULATOR};
 
 class C6502
 {
@@ -77,6 +77,10 @@ private:
     void ADC(ADDRESS_MODE amode); // add accumulator + operand + carry -> accumulator
     void AND(ADDRESS_MODE amode); // and memory with accumulator -> accumulator
     void ASL(ADDRESS_MODE amode); // shift accumulator or memory left <<
+    // ....
+    void LDA(ADDRESS_MODE amode); // load accumulator with memory, m -> a
+    void LDX(ADDRESS_MODE amode); // load register x with memory, m -> reg x
+    void LDY(ADDRESS_MODE amode); // load register y with memory, m -> reg y
 
     void printError(std::string errormsg);
 
@@ -84,6 +88,7 @@ public:
     C6502(uint8_t *memory, unsigned int memory_size);
 
     void debugConsole();
+
 
 };
 #endif // CLASS_C6502

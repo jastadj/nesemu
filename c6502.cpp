@@ -112,6 +112,68 @@ bool C6502::execute(uint8_t opcode)
         ASL(ABSOLUTE_X);
         break;
 
+    // .....
+
+    // LDA - Load accumulator with memory
+    case 0xa9:
+        LDA(IMMEDIATE);
+        break;
+    case 0xa5:
+        LDA(ZERO_PAGE);
+        break;
+    case 0xb5:
+        LDA(ZERO_PAGE_X);
+        break;
+    case 0xad:
+        LDA(ABSOLUTE);
+        break;
+    case 0xbd:
+        LDA(ABSOLUTE_X);
+        break;
+    case 0xb9:
+        LDA(ABSOLUTE_Y);
+        break;
+    case 0xa1:
+        LDA(INDIRECT_X);
+        break;
+    case 0xb1:
+        LDA(INDIRECT_Y);
+        break;
+
+    // LDX - Load register x with memory
+    case 0xa2:
+        LDX(IMMEDIATE);
+        break;
+    case 0xa6:
+        LDX(ZERO_PAGE);
+        break;
+    case 0xb6:
+        LDX(ZERO_PAGE_Y);
+        break;
+    case 0xae:
+        LDX(ABSOLUTE);
+        break;
+    case 0xbe:
+        LDX(ABSOLUTE_Y);
+        break;
+
+    // LDY - Load register y with memory
+    case 0xa0:
+        LDY(IMMEDIATE);
+        break;
+    case 0xa4:
+        LDY(ZERO_PAGE);
+        break;
+    case 0xb4:
+        LDY(ZERO_PAGE_X);
+        break;
+    case 0xac:
+        LDY(ABSOLUTE);
+        break;
+    case 0xbc:
+        LDY(ABSOLUTE_X);
+        break;
+
     default:
         return false;
         break;
@@ -153,29 +215,36 @@ uint8_t *C6502::getAddress(ADDRESS_MODE amode)
         break;
     // zero page x gets address of 0x00YY where YY is REGX + next mem byte
     case ZERO_PAGE_X:
-        return &m_Mem[ m_RegX + m_RegPC + 1];
+        return &m_Mem[ m_RegX + m_Mem[m_RegPC + 1] ];
+        break;
+    // zero page y gets address ox 0x00YY where YY is REGY + next mem byte
+    case ZERO_PAGE_Y:
+        return &m_Mem[ m_RegY + m_Mem[m_RegPC + 1] ];
         break;
     // ABSOLUTE gets address from next two bytes (LSB first)
     case ABSOLUTE:
-        return &m_Mem[ ( (m_RegPC + 2) << 8) + m_RegPC+1 ];
+        return &m_Mem[ ( (m_Mem[m_RegPC + 2]) << 8) + m_Mem[m_RegPC+1] ];
         break;
     // ABSOLUTE X gets address from next two bytes + REGX
     case ABSOLUTE_X:
-        return &m_Mem[ ( (m_RegPC + 2) << 8) + m_RegPC+1 + m_RegX];
+        return &m_Mem[ ( (m_Mem[m_RegPC + 2]) << 8) + m_Mem[m_RegPC+1] + m_RegX];
         break;
     // ABSOLUTE X gets address from next two bytes + REGY
     case ABSOLUTE_Y:
-            return &m_Mem[ ( (m_RegPC + 2) << 8) + m_RegPC+1 + m_RegY];
+            return &m_Mem[ ( (m_Mem[m_RegPC + 2]) << 8) + m_Mem[m_RegPC+1] + m_RegY];
         break;
     case INDIRECT_X:
         {
-            uint16_t addr = m_RegX + m_RegPC + 1;
+            uint16_t addr = m_RegX + m_Mem[m_RegPC + 1];
             if(addr > 0xff) addr -= 0xff; // rollover zero-page index
-            return &m_Mem[  (m_Mem[addr] << 8) + m_Mem[addr+1]    ];
+            return &m_Mem[  (m_Mem[addr+1] << 8) + m_Mem[addr]    ];
         }
         break;
     case INDIRECT_Y:
-            return &m_Mem[  (m_Mem[m_RegPC+2] << 8) + m_Mem[m_RegPC+1] + m_RegY ];
+        {
+            uint16_t lobyte = m_Mem[m_RegPC + 1];
+            return &m_Mem[  (m_Mem[lobyte+1] << 8) + m_Mem[lobyte] + m_RegY ];
+        }
         break;
     default:
         return NULL;
@@ -370,6 +439,147 @@ void C6502::ASL(ADDRESS_MODE amode) // null = accumulator
     }
 }
 
+// load accumator with memory, a = m
+// LDA
+void C6502::LDA(ADDRESS_MODE amode)
+{
+    uint8_t *addr = getAddress(amode);
+
+    switch(amode)
+    {
+        case IMMEDIATE:
+            m_RegPC += 2;
+            m_Cycles += 2;
+            break;
+        case ZERO_PAGE:
+            m_RegPC += 2;
+            m_Cycles += 3;
+            break;
+        case ZERO_PAGE_X:
+            m_RegPC += 2;
+            m_Cycles += 4;
+            break;
+        case ABSOLUTE:
+            m_RegPC += 3;
+            m_Cycles += 4;
+            break;
+        case ABSOLUTE_X:
+            if(m_RegX + m_RegPC+1 > 0xff) m_Cycles++;
+            m_RegPC += 3;
+            m_Cycles += 4;
+            break;
+        case ABSOLUTE_Y:
+            if(m_RegY + m_RegPC+1 > 0xff) m_Cycles++;
+            m_RegPC += 3;
+            m_Cycles += 4;
+            break;
+        case INDIRECT_X:
+            m_RegPC += 2;
+            m_Cycles += 6;
+            break;
+        case INDIRECT_Y:
+            if( m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
+            m_RegPC += 2;
+            m_Cycles += 5;
+            break;
+        default:
+            {
+                std::stringstream emsg;
+                emsg << "LDA error address mode @ PC:" << std::hex << "0x" << m_RegPC;
+                printError(emsg.str());
+            }
+            return;
+            break;
+    }
+
+    m_RegA = *addr;
+}
+
+// load register x with memory, regx = m
+// LDX
+void C6502::LDX(ADDRESS_MODE amode)
+{
+    uint8_t *addr = getAddress(amode);
+
+    switch(amode)
+    {
+        case IMMEDIATE:
+            m_RegPC += 2;
+            m_Cycles += 2;
+            break;
+        case ZERO_PAGE:
+            m_RegPC += 2;
+            m_Cycles += 3;
+            break;
+        case ZERO_PAGE_Y:
+            m_RegPC += 2;
+            m_Cycles += 4;
+            break;
+        case ABSOLUTE:
+            m_RegPC += 3;
+            m_Cycles += 4;
+            break;
+        case ABSOLUTE_Y:
+            if(m_RegY + m_RegPC+1 > 0xff) m_Cycles++;
+            m_RegPC += 3;
+            m_Cycles += 4;
+            break;
+        default:
+            {
+                std::stringstream emsg;
+                emsg << "LDX error address mode @ PC:" << std::hex << "0x" << m_RegPC;
+                printError(emsg.str());
+            }
+            return;
+            break;
+    }
+
+    m_RegX = *addr;
+}
+
+// load register y with memory, regy = m
+// LDY
+void C6502::LDY(ADDRESS_MODE amode)
+{
+    uint8_t *addr = getAddress(amode);
+
+    switch(amode)
+    {
+        case IMMEDIATE:
+            m_RegPC += 2;
+            m_Cycles += 2;
+            break;
+        case ZERO_PAGE:
+            m_RegPC += 2;
+            m_Cycles += 3;
+            break;
+        case ZERO_PAGE_X:
+            m_RegPC += 2;
+            m_Cycles += 4;
+            break;
+        case ABSOLUTE:
+            m_RegPC += 3;
+            m_Cycles += 4;
+            break;
+        case ABSOLUTE_X:
+            if(m_RegY + m_RegPC+1 > 0xff) m_Cycles++;
+            m_RegPC += 3;
+            m_Cycles += 4;
+            break;
+        default:
+            {
+                std::stringstream emsg;
+                emsg << "LDY error address mode @ PC:" << std::hex << "0x" << m_RegPC;
+                printError(emsg.str());
+            }
+            return;
+            break;
+    }
+
+    m_RegY = *addr;
+}
+
+
 //////////////////////////////
 // DEBUG CONSOLE
 void C6502::debugConsole()
@@ -415,6 +625,9 @@ void C6502::debugConsole()
             std::cout << "clearmem - clear all memory" << std::endl;
             std::cout << "dumpmem [file] - dump memory, optionally to file" << std::endl;
             std::cout << "loadmem <file> [offset] - load memory from file at optional offset" << std::endl;
+            std::cout << "setx <byte> - set register x" << std::endl;
+            std::cout << "sety <byte> - set register y" << std::endl;
+            std::cout << "setpc <address> - set program counter to address" << std::endl;
 
         }
         else if(words[0] == "show")
@@ -501,7 +714,7 @@ void C6502::debugConsole()
         }
         else if(words[0] == "clearmem")
         {
-            for(int i = 0; i < m_MemSize; i++)
+            for(unsigned int i = 0; i < m_MemSize; i++)
             {
                 m_Mem[i] = 0x0;
             }
@@ -510,7 +723,7 @@ void C6502::debugConsole()
         {
             if(words.size() == 1)
             {
-                for(int i = 0; i < m_MemSize/16; i++)
+                for(unsigned int i = 0; i < m_MemSize/16; i++)
                 {
                     std::cout << std::hex << std::setfill('0') << std::setw(4) << i*16 << ": ";
                     for(int n = 0; n < 16; n++)
@@ -540,7 +753,7 @@ void C6502::debugConsole()
                 {
 
                     // write all memory to file, stopping at last non-zero address
-                    for(int i = 0; i <= lastentry; i++) ofile.put( (unsigned char)( int(m_Mem[i])) );
+                    for(unsigned int i = 0; i <= lastentry; i++) ofile.put( (unsigned char)( int(m_Mem[i])) );
                     ofile.close();
                     std::cout << "Wrote " << std::dec << lastentry + 1 << " bytes to " << words[1] << std::endl;
 
@@ -581,6 +794,61 @@ void C6502::debugConsole()
 
             }
             else std::cout << "Incorrect parameters : loadmem <file> [offset]" << std::endl;
+        }
+        else if(words[0] == "setx")
+        {
+            if(words.size() == 2)
+            {
+                int val;
+
+                std::stringstream bss;
+                bss << words[1];
+
+                bss >> val;
+                if( val <= 0xff)
+                {
+                    m_RegX = val;
+                    std::cout << "Register X = " << std::hex << std::setfill('0') << std::setw(2) << int(m_RegX) << std::endl;
+                }
+                else std::cout << "Value is larger than 1 byte : " << val << std::endl;
+            }
+            else std::cout << "Invalid parameters." << std::endl;
+        }
+        else if(words[0] == "sety")
+        {
+            if(words.size() == 2)
+            {
+                int val;
+
+                std::stringstream bss;
+                bss << words[1];
+
+                bss >> val;
+                if( val <= 0xff)
+                {
+                    m_RegY = val;
+                    std::cout << "Register Y = " << std::hex << std::setfill('0') << std::setw(2) << int(m_RegY) << std::endl;
+                }
+                else std::cout << "Value is larger than 1 byte : " << val << std::endl;
+            }
+            else std::cout << "Invalid parameters." << std::endl;
+        }
+        else if(words[0] == "setpc")
+        {
+            if(words.size() == 2)
+            {
+                unsigned int addr;
+
+                std::stringstream wss;
+                // strip 0x prefix if found
+                if(words[1][1] == 'x') words[1].erase(0,2);
+
+                wss << std::hex << words[1];
+                wss >> addr;
+
+                m_RegPC = uint16_t(addr);
+
+            }
         }
         else
         {
