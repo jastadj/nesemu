@@ -20,9 +20,13 @@ bool C6502::init()
     m_RegX = 0x0;
     m_RegY = 0x0;
 
-    // reset program counter and clear stack pointer
+    // reset cycles, program counter and clear stack pointer,
+    m_Cycles = 0;
     m_RegPC = 0x0;
     m_RegSP = 0x0;
+
+    // clear stack
+    m_Stack.clear();
 
     // clear the status register
     m_RegStat = 0x0 | (0x1 << FLAG_NOT_USED); // bit 5 (not used) is always high
@@ -36,6 +40,24 @@ bool C6502::init()
 void C6502::printError(std::string errormsg)
 {
     std::cout << errormsg << std::endl;
+}
+
+void C6502::pushStack(uint8_t val)
+{
+    m_Stack.push_back(val);
+}
+
+uint8_t C6502::popStack()
+{
+    if(m_Stack.empty())
+    {
+        std::cout << "Error popping stack, stack is empty!  Returning 0x0." << std::endl;
+        return 0x0;
+    }
+
+    uint8_t val = m_Stack.back();
+    m_Stack.pop_back();
+    return val;
 }
 
 bool C6502::execute(uint8_t opcode)
@@ -53,7 +75,7 @@ bool C6502::execute(uint8_t opcode)
     case 0x75:
         ADC(ZERO_PAGE_X);
         break;
-    case 0x60:
+    case 0x6D:
         ADC(ABSOLUTE);
         break;
     case 0x7D:
@@ -180,7 +202,147 @@ bool C6502::execute(uint8_t opcode)
         CLV(IMPLIED);
         break;
 
-    // .....
+    // CMP - compare memory and accumulator, a - m
+    case 0xc9:
+        CMP(IMMEDIATE);
+        break;
+    case 0xc5:
+        CMP(ZERO_PAGE);
+        break;
+    case 0xd5:
+        CMP(ZERO_PAGE_X);
+        break;
+    case 0xcd:
+        CMP(ABSOLUTE);
+        break;
+    case 0xdd:
+        CMP(ABSOLUTE_X);
+        break;
+    case 0xd9:
+        CMP(ABSOLUTE_Y);
+        break;
+    case 0xc1:
+        CMP(INDIRECT_X);
+        break;
+    case 0xd1:
+        CMP(INDIRECT_Y);
+        break;
+
+    // CPX - compare memory and register x
+    // reg x - m
+    case 0xe0:
+        CPX(IMMEDIATE);
+        break;
+    case 0xe4:
+        CPX(ZERO_PAGE);
+        break;
+    case 0xec:
+        CPX(ABSOLUTE);
+        break;
+
+    // CPY - compare memory and register y
+    // reg y - m
+    case 0xc0:
+        CPY(IMMEDIATE);
+        break;
+    case 0xc4:
+        CPY(ZERO_PAGE);
+        break;
+    case 0xcc:
+        CPY(ABSOLUTE);
+        break;
+
+    // DEC - decrement memory by 1
+    // m--
+    case 0xc6:
+        DEC(ZERO_PAGE);
+        break;
+    case 0xd6:
+        DEC(ZERO_PAGE_X);
+        break;
+    case 0xce:
+        DEC(ABSOLUTE);
+        break;
+    case 0xde:
+        DEC(ABSOLUTE_X);
+        break;
+
+    // DEX - decrement register x by 1
+    case 0xca:
+        DEX(IMPLIED);
+        break;
+
+    // DEY - decrement register y by 1
+    case 0x88:
+        DEY(IMPLIED);
+        break;
+
+    // EOR - exclusive or memory with accumulator
+    // a ^ m -> a
+    case 0x49:
+        EOR(IMMEDIATE);
+        break;
+    case 0x45:
+        EOR(ZERO_PAGE);
+        break;
+    case 0x55:
+        EOR(ZERO_PAGE_X);
+        break;
+    case 0x40:
+        EOR(ABSOLUTE);
+        break;
+    case 0x5D:
+        EOR(ABSOLUTE_X);
+        break;
+    case 0x59:
+        EOR(ABSOLUTE_Y);
+        break;
+    case 0x41:
+        EOR(INDIRECT_X);
+        break;
+    case 0x51:
+        EOR(INDIRECT_Y);
+        break;
+
+    // INC - increment memory by 1
+    // m++
+    case 0xe6:
+        INC(ZERO_PAGE);
+        break;
+    case 0xf6:
+        INC(ZERO_PAGE_X);
+        break;
+    case 0xee:
+        INC(ABSOLUTE);
+        break;
+    case 0xfe:
+        INC(ABSOLUTE_X);
+        break;
+
+    // INX - increment register x by 1
+    // reg x ++
+    case 0xe8:
+        INX(IMPLIED);
+        break;
+
+    // INY - increment register y by 1
+    case 0xc8:
+        INY(IMPLIED);
+        break;
+
+    // JMP - jump to new location
+    // PC + 1 = PCL, PC + 2 = PCH
+    case 0x4c:
+        JMP(ABSOLUTE);
+        break;
+    case 0x6c:
+        JMP(INDIRECT);
+        break;
+
+    // JSR - jump and save return address on stack
+    case 0x20:
+        JSR(ABSOLUTE);
+        break;
 
     // LDA - Load accumulator with memory
     case 0xa9:
@@ -240,6 +402,250 @@ bool C6502::execute(uint8_t opcode)
         break;
     case 0xbc:
         LDY(ABSOLUTE_X);
+        break;
+
+    // LSR - Shift right one bit
+    // memory or accumulator >> 1
+    case 0x4a:
+        LSR(ACCUMULATOR);
+        break;
+    case 0x46:
+        LSR(ZERO_PAGE);
+        break;
+    case 0x56:
+        LSR(ZERO_PAGE_X);
+        break;
+    case 0x4e:
+        LSR(ABSOLUTE);
+        break;
+    case 0x5e:
+        LSR(ABSOLUTE_X);
+        break;
+
+    // NOP - no operation
+    // 2 cycles
+    case 0xea:
+        NOP(IMPLIED);
+        break;
+
+    // ORA - or memory with accumulator
+    // a | m -> a
+    case 0x09:
+        ORA(IMMEDIATE);
+        break;
+    case 0x05:
+        ORA(ZERO_PAGE);
+        break;
+    case 0x15:
+        ORA(ZERO_PAGE_X);
+        break;
+    case 0x0d:
+        ORA(ABSOLUTE);
+        break;
+    case 0x1d:
+        ORA(ABSOLUTE_X);
+        break;
+    case 0x19:
+        ORA(ABSOLUTE_Y);
+        break;
+    case 0x01:
+        ORA(INDIRECT_X);
+        break;
+    case 0x11:
+        ORA(INDIRECT_Y);
+        break;
+
+    // PHA - push accumulator on stack
+    case 0x48:
+        PHA(IMPLIED);
+        break;
+
+    // PHP - push status register on stack
+    case 0x08:
+        PHP(IMPLIED);
+        break;
+
+    // PLA - pull accumulator from stack
+    case 0x68:
+        PLA(IMPLIED);
+        break;
+
+    // PLP - pull status register from stack
+    case 0x28:
+        PLP(IMPLIED);
+        break;
+
+    // ROL - rotate one bit left
+    // memory or accumulator
+    case 0x2a:
+        ROL(ACCUMULATOR);
+        break;
+    case 0x26:
+        ROL(ZERO_PAGE);
+        break;
+    case 0x36:
+        ROL(ZERO_PAGE_X);
+        break;
+    case 0x2e:
+        ROL(ABSOLUTE);
+        break;
+    case 0x3e:
+        ROL(ABSOLUTE_X);
+        break;
+
+    // ROR - rotate one bit right
+    // memory or accumulator
+    case 0x6a:
+        ROR(ACCUMULATOR);
+        break;
+    case 0x66:
+        ROR(ZERO_PAGE);
+        break;
+    case 0x76:
+        ROR(ZERO_PAGE_X);
+        break;
+    case 0x6e:
+        ROR(ABSOLUTE);
+        break;
+    case 0x7e:
+        ROR(ABSOLUTE_X);
+        break;
+
+    // RTI - return from interrupt
+    // status from stack, PC from stack
+    case 0x4d:
+        RTI(IMPLIED);
+        break;
+
+    // RTS - return from subroutine
+    // get pc from stack
+    case 0x60:
+        RTS(IMPLIED);
+        break;
+
+    // SBC - subtract memory from accumulator with borrow
+    // a - m - c -> a
+    case 0xe9:
+        SBC(IMMEDIATE);
+        break;
+    case 0xe5:
+        SBC(ZERO_PAGE);
+        break;
+    case 0xf5:
+        SBC(ZERO_PAGE_X);
+        break;
+    case 0xed:
+        SBC(ABSOLUTE);
+        break;
+    case 0xfd:
+        SBC(ABSOLUTE_X);
+        break;
+    case 0xf9:
+        SBC(ABSOLUTE_Y);
+        break;
+    case 0xe1:
+        SBC(INDIRECT_X);
+        break;
+    case 0xf1:
+        SBC(INDIRECT_Y);
+        break;
+
+    // SEC - set carry flag
+    case 0x38:
+        SEC(IMPLIED);
+        break;
+
+    // SED - set decimal mode
+    case 0xf8:
+        SED(IMPLIED);
+        break;
+
+    // SEI - set interrupt disable status
+    case 0x78:
+        SEI(IMPLIED);
+        break;
+
+    // STA - store accumulator in memory
+    // m = accumulator
+    case 0x85:
+        STA(ZERO_PAGE);
+        break;
+    case 0x95:
+        STA(ZERO_PAGE_X);
+        break;
+    case 0x80:
+        STA(ABSOLUTE);
+        break;
+    case 0x9D:
+        STA(ABSOLUTE_X);
+        break;
+    case 0x99:
+        STA(ABSOLUTE_Y);
+        break;
+    case 0x81:
+        STA(INDIRECT_X);
+        break;
+    case 0x91:
+        STA(INDIRECT_Y);
+        break;
+
+    // STX - store register x in memory
+    // m = reg x
+    case 0x86:
+        STX(ZERO_PAGE);
+        break;
+    case 0x96:
+        STX(ZERO_PAGE_Y);
+        break;
+    case 0x8e:
+        STX(ABSOLUTE);
+        break;
+
+    // STY - store register y in memory
+    // m = reg y
+    case 0x84:
+        STY(ZERO_PAGE);
+        break;
+    case 0x94:
+        STY(ZERO_PAGE_X);
+        break;
+    case 0x8c:
+        STY(ABSOLUTE);
+        break;
+
+    // TAX - transfer accumulator to reg x
+    // reg x = a
+    case 0xaa:
+        TAX(IMPLIED);
+        break;
+
+    // TAY - transfer accumulator to reg y
+    // reg y = a
+    case 0xa8:
+        TAY(IMPLIED);
+        break;
+
+    // TSX - Transfer stack pointer to reg x
+    // reg x = *sp
+    case 0xba:
+        TSX(IMPLIED);
+        break;
+
+    // TXA - transfer reg x to accumulator
+    case 0x8a:
+        TXA(IMPLIED);
+        break;
+
+    // TXS - transfer reg x to stack pointer
+    // reg x = *SP
+    case 0x9a:
+        TSX(IMPLIED);
+        break;
+
+    // TYA - transfer reg y to accumulator
+    // a = reg y
+    case 0x98:
+        TYA(IMPLIED);
         break;
 
     default:
@@ -316,6 +722,13 @@ uint8_t *C6502::getAddress(ADDRESS_MODE amode)
         {
             uint16_t lobyte = m_Mem[m_RegPC + 1];
             return &m_Mem[  (m_Mem[lobyte+1] << 8) + m_Mem[lobyte] + m_RegY ];
+        }
+        break;
+    // only used for JUMP
+    case INDIRECT:
+        {
+            uint16_t lobyte = m_Mem[m_RegPC + 1] + (m_Mem[m_RegPC + 2] << 8);
+            return &m_Mem[ m_Mem[lobyte] + (m_Mem[lobyte+1] << 8)  ];
         }
         break;
     case RELATIVE:

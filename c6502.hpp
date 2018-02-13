@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <vector>
 
     // b7 = S - Sign flag, 1 = negative
     // b6 = V - overflow flag
@@ -16,7 +17,7 @@ enum STAT_FLAG{FLAG_CARRY, FLAG_ZERO, FLAG_INTERRUPT_DISABLE, FLAG_DECIMAL_MODE,
                FLAG_NOT_USED, FLAG_OVERFLOW, FLAG_SIGN};
 
 enum ADDRESS_MODE{IMMEDIATE, ZERO_PAGE, ZERO_PAGE_X, ZERO_PAGE_Y, ABSOLUTE, ABSOLUTE_X, ABSOLUTE_Y, INDIRECT_X,
-                  INDIRECT_Y, ACCUMULATOR, RELATIVE, IMPLIED};
+                  INDIRECT_Y, INDIRECT, ACCUMULATOR, RELATIVE, IMPLIED};
 
 // op codes implemented in c6502_ops.cpp
 // debug console implemented in c6502_debug.cpp
@@ -49,6 +50,10 @@ private:
 
     uint8_t m_RegSP; // stack pointer (first empty place on the stack)
     uint16_t m_RegPC; // program counter, position of current instruction
+
+    std::vector<uint8_t> m_Stack;
+    void pushStack(uint8_t val);
+    uint8_t popStack();
 
     uint8_t m_ImmediateTemp; // temporary storage for immediate addressing mode
 
@@ -94,10 +99,45 @@ private:
     void CLD(ADDRESS_MODE amode); // clear decimal mode, d = 0
     void CLI(ADDRESS_MODE amode); // clear interrupt disable flag, i = 0
     void CLV(ADDRESS_MODE amode); // clear overflow flag, v = 0
-    // ....
+    void CMP(ADDRESS_MODE amode); // compare memory and accumulator, a - m
+    void CPX(ADDRESS_MODE amode); // compare memory and  x, x - m
+    void CPY(ADDRESS_MODE amode); // compare memory and y, y - m
+    void DEC(ADDRESS_MODE amode); // decrement memory by 1, m--
+    void DEX(ADDRESS_MODE amode); // decrement register x by 1
+    void DEY(ADDRESS_MODE amode); // decrement register y by 1
+    void EOR(ADDRESS_MODE amode); // exclusive or mem with accumulator, a ^ m -> a
+    void INC(ADDRESS_MODE amode); // increment memory by 1, m++
+    void INX(ADDRESS_MODE amode); // increment register x by 1, regx++
+    void INY(ADDRESS_MODE amode); // increment register y by 1, regy++
+    void JMP(ADDRESS_MODE amode); // jump to new location
+    void JSR(ADDRESS_MODE amode); // jump and save return address to stack
     void LDA(ADDRESS_MODE amode); // load accumulator with memory, m -> a
     void LDX(ADDRESS_MODE amode); // load register x with memory, m -> reg x
     void LDY(ADDRESS_MODE amode); // load register y with memory, m -> reg y
+    void LSR(ADDRESS_MODE amode); // shift right one bit, m | a >> 1
+    void NOP(ADDRESS_MODE amode); // no operation (2 cycles)
+    void ORA(ADDRESS_MODE amode); // or memory with accumulator a|m -> a
+    void PHA(ADDRESS_MODE amode); // push accumulator on stack
+    void PHP(ADDRESS_MODE amode); // push status register on stack
+    void PLA(ADDRESS_MODE amode); // pull accumulator from stack
+    void PLP(ADDRESS_MODE amode); // pull status register from stack
+    void ROL(ADDRESS_MODE amode); // rotate one bit left (memory or accumulator)
+    void ROR(ADDRESS_MODE amode); // rotate one bit right (memory or accumulator)
+    void RTI(ADDRESS_MODE amode); // return from interrupt
+    void RTS(ADDRESS_MODE amode); // return from subroutine
+    void SBC(ADDRESS_MODE amode); // subtract memory from accumulator with borrow
+    void SEC(ADDRESS_MODE amode); // set carry flag
+    void SED(ADDRESS_MODE amode); // set decimal mode
+    void SEI(ADDRESS_MODE amode); // set interrupt disable status
+    void STA(ADDRESS_MODE amode); // store accumulator in memory
+    void STX(ADDRESS_MODE amode); // store register x in memory
+    void STY(ADDRESS_MODE amode); // store register y in memory
+    void TAX(ADDRESS_MODE amode); // transfer accumulator to reg x
+    void TAY(ADDRESS_MODE amode); // transfer accumulator to reg y
+    void TSX(ADDRESS_MODE amode); // transfer stack pointer to reg x
+    void TXA(ADDRESS_MODE amode); // transfer reg x to accumulator
+    void TXS(ADDRESS_MODE amode); // transfer reg x to stack pointer
+    void TYA(ADDRESS_MODE amode); // transfer reg y to accumulator
 
     void printError(std::string errormsg);
 
