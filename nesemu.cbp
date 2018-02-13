@@ -33,6 +33,8 @@
 		</Compiler>
 		<Unit filename="c6502.cpp" />
 		<Unit filename="c6502.hpp" />
+		<Unit filename="c6502_debug.cpp" />
+		<Unit filename="c6502_ops.cpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="nes.cpp" />
 		<Unit filename="nes.hpp" />

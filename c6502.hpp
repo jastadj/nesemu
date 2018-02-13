@@ -12,11 +12,14 @@
     // b2 = I - interrupt enable/disable, if set, interrupts are disabled
     // b1 = Z - Zero flag, set when arithmetic or logical op produces 0
     // b0 = C - carry flag
-enum STAT_FLAG{FLAG_CARRY, FLAG_ZERO, FLAG_INTERRUPT_ENABLE, FLAG_DECIMAL_MODE, FLAG_SOFTWARE_INTERRUPT,
+enum STAT_FLAG{FLAG_CARRY, FLAG_ZERO, FLAG_INTERRUPT_DISABLE, FLAG_DECIMAL_MODE, FLAG_SOFTWARE_INTERRUPT,
                FLAG_NOT_USED, FLAG_OVERFLOW, FLAG_SIGN};
 
 enum ADDRESS_MODE{IMMEDIATE, ZERO_PAGE, ZERO_PAGE_X, ZERO_PAGE_Y, ABSOLUTE, ABSOLUTE_X, ABSOLUTE_Y, INDIRECT_X,
-                  INDIRECT_Y, ACCUMULATOR, RELATIVE};
+                  INDIRECT_Y, ACCUMULATOR, RELATIVE, IMPLIED};
+
+// op codes implemented in c6502_ops.cpp
+// debug console implemented in c6502_debug.cpp
 
 class C6502
 {
@@ -53,7 +56,7 @@ private:
     uint8_t m_RegStat;
     bool getFlag(STAT_FLAG flag);
     void setFlag(STAT_FLAG flag, bool on);
-    // b7 = S - Sign flag, 1 = negative
+    // b7 = N - Sign flag, 1 = negative
     // b6 = V - overflow flag
     // b5 = not used, should always be logical 1
     // b4 = B - software interrupt is executed (BRK)
@@ -78,6 +81,19 @@ private:
     void AND(ADDRESS_MODE amode); // and memory with accumulator -> accumulator
     void ASL(ADDRESS_MODE amode); // shift accumulator or memory left <<
     void BCC(ADDRESS_MODE amode); // branch on carry clear, branch if carry flag == 0
+    void BCS(ADDRESS_MODE amode); // branch on carry set, branch if carry flag == 1
+    void BEQ(ADDRESS_MODE amode); // branch on result zero, branch if zero flag == 1
+    void BIT(ADDRESS_MODE amode); // bit - test bits in memory with accumulator
+    void BMI(ADDRESS_MODE amode); // branch on result minus, n == 1
+    void BNE(ADDRESS_MODE amode); // branch on results not zero, z == 0
+    void BPL(ADDRESS_MODE amode); // branch on result plus, n == 0
+    void BRK(ADDRESS_MODE amode); // break, force break
+    void BVC(ADDRESS_MODE amode); // branch on overflow clear, v == 0
+    void BVS(ADDRESS_MODE amode); // branch on overflow set, v == 1
+    void CLC(ADDRESS_MODE amode); // clear carry flag, c = 0
+    void CLD(ADDRESS_MODE amode); // clear decimal mode, d = 0
+    void CLI(ADDRESS_MODE amode); // clear interrupt disable flag, i = 0
+    void CLV(ADDRESS_MODE amode); // clear overflow flag, v = 0
     // ....
     void LDA(ADDRESS_MODE amode); // load accumulator with memory, m -> a
     void LDX(ADDRESS_MODE amode); // load register x with memory, m -> reg x

@@ -56,7 +56,7 @@ bool C6502::execute(uint8_t opcode)
     case 0x60:
         ADC(ABSOLUTE);
         break;
-    case 0x70:
+    case 0x7D:
         ADC(ABSOLUTE_X);
         break;
     case 0x79:
@@ -115,6 +115,69 @@ bool C6502::execute(uint8_t opcode)
     // BCC - branch on carry clear (c==0)
     case 0x90:
         BCC(RELATIVE);
+        break;
+
+    // BCS - branch on carry set (c == 1)
+    case 0xb0:
+        BCS(RELATIVE);
+        break;
+
+    // BIT - test bits in memory with accumulator
+    case 0x24:
+        BIT(ZERO_PAGE);
+        break;
+    case 0x2c:
+        BIT(ABSOLUTE);
+        break;
+
+    // BMI - branch on result minus, n == 1
+    case 0x30:
+        BMI(RELATIVE);
+        break;
+
+    // BNE - branch on result not zero, Z == 0
+    case 0xd0:
+        BNE(RELATIVE);
+        break;
+
+    // BPL - branch on result plus, n == 0
+    case 0x10:
+        BPL(RELATIVE);
+        break;
+
+    // BRK - force break
+    case 0x00:
+        BRK(IMPLIED);
+        break;
+
+    // BVC - branch on overflow clear, v == 0
+    case 0x50:
+        BVC(RELATIVE);
+        break;
+
+    // BVS - branch on overflow set, v == 1
+    case 0x70:
+        BVS(RELATIVE);
+        break;
+
+    // CLC - clear carry flag, c = 0
+    case 0x18:
+        CLC(IMPLIED);
+        break;
+
+    // CLD - clear decimal mode, d = 0
+    case 0xd8:
+        CLD(IMPLIED);
+        break;
+
+    // CLI - clear interrupt disable flag, i = 0
+    case 0x58:
+        CLI(IMPLIED);
+        break;
+
+    // CLV - clear overflow flag, v = 0
+    case 0xb8:
+        CLV(IMPLIED);
         break;
 
     // .....
@@ -262,6 +325,9 @@ uint8_t *C6502::getAddress(ADDRESS_MODE amode)
             return &m_Mem[ uint16_t(pc)];
         }
         break;
+    case IMPLIED:
+        return NULL;
+        break;
     default:
         std::cout << "Error, access mode " << amode << " is undefined.  Returning NULL." << std::endl;
         return NULL;
@@ -269,651 +335,4 @@ uint8_t *C6502::getAddress(ADDRESS_MODE amode)
     }
 
     return NULL;
-}
-
-// add memory to accumulator with carry
-// A + M + C -> A, C
-void C6502::ADC(ADDRESS_MODE amode)
-{
-    uint8_t *addr = getAddress(amode);
-
-    unsigned int temp = m_RegA + (*addr) + (getFlag(FLAG_CARRY) ? 1 : 0);
-    setFlag(FLAG_ZERO, (temp == 0x0));
-
-    switch(amode)
-    {
-        case IMMEDIATE:
-            m_RegPC += 2;
-            m_Cycles += 2;
-            break;
-        case ZERO_PAGE:
-            m_RegPC += 2;
-            m_Cycles += 3;
-            break;
-        case ZERO_PAGE_X:
-            m_RegPC += 2;
-            m_Cycles += 4;
-            break;
-        case ABSOLUTE:
-            m_RegPC += 3;
-            m_Cycles += 4;
-            break;
-        case ABSOLUTE_X:
-            if(m_RegX + m_RegPC+1 > 0xff) m_Cycles++;
-            m_RegPC += 3;
-            m_Cycles += 4;
-            break;
-        case ABSOLUTE_Y:
-            if(m_RegY + m_RegPC+1 > 0xff) m_Cycles++;
-            m_RegPC += 3;
-            m_Cycles += 4;
-            break;
-        case INDIRECT_X:
-            m_RegPC += 2;
-            m_Cycles += 6;
-            break;
-        case INDIRECT_Y:
-            if( m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
-            m_RegPC += 2;
-            m_Cycles += 5;
-            break;
-        default:
-            {
-                std::stringstream emsg;
-                emsg << "ADC error address mode @ PC:" << std::hex << "0x" << m_RegPC;
-                printError(emsg.str());
-            }
-            return;
-            break;
-    }
-
-
-    if(getFlag(FLAG_DECIMAL_MODE))
-    {
-        if (((m_RegA & 0xf) + ( (*addr) & 0xf) + (getFlag(FLAG_CARRY) ? 1 : 0)) > 9) temp += 6;
-        setFlag(FLAG_SIGN, (temp >> 7) & 0x1);
-        setFlag(FLAG_OVERFLOW,!((m_RegA ^ (*addr) ) & 0x80) && ((m_RegA ^ temp) & 0x80));
-        if (temp > 0x99) temp += 96;
-    }
-    else
-    {
-        setFlag(FLAG_SIGN, temp & 0x80 );
-        setFlag(FLAG_OVERFLOW,!((m_RegA ^ (*addr) ) & 0x80) && ((m_RegA ^ temp) & 0x80));
-        setFlag(FLAG_CARRY, temp > 0xff);
-    }
-    m_RegA = temp&0xff;
-}
-
-// AND memory with accumulator
-// A&M -> A
-void C6502::AND(ADDRESS_MODE amode)
-{
-    uint8_t *addr = getAddress(amode);
-
-    switch(amode)
-    {
-        case IMMEDIATE:
-            m_RegPC += 2;
-            m_Cycles += 2;
-            break;
-        case ZERO_PAGE:
-            m_RegPC += 2;
-            m_Cycles += 3;
-            break;
-        case ZERO_PAGE_X:
-            m_RegPC += 2;
-            m_Cycles += 4;
-            break;
-        case ABSOLUTE:
-            m_RegPC += 3;
-            m_Cycles += 4;
-            break;
-        case ABSOLUTE_X:
-            if(m_RegX + m_RegPC+1 > 0xff) m_Cycles++;
-            m_RegPC += 3;
-            m_Cycles += 4;
-            break;
-        case ABSOLUTE_Y:
-            if(m_RegY + m_RegPC+1 > 0xff) m_Cycles++;
-            m_RegPC += 3;
-            m_Cycles += 4;
-            break;
-        case INDIRECT_X:
-            m_RegPC += 2;
-            m_Cycles += 6;
-            break;
-        case INDIRECT_Y:
-            if( m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
-            m_RegPC += 2;
-            m_Cycles += 5;
-            break;
-        default:
-            {
-                std::stringstream emsg;
-                emsg << "AND error address mode @ PC:" << std::hex << "0x" << m_RegPC;
-                printError(emsg.str());
-            }
-            return;
-            break;
-    }
-
-    m_RegA = m_RegA & (*addr);
-    setFlag(FLAG_SIGN, m_RegA & 0x80);
-    setFlag(FLAG_ZERO, (m_RegA == 0x0));
-}
-
-// ASL shift left one bit (memory or accumulator)
-// M|A << 1
-void C6502::ASL(ADDRESS_MODE amode) // null = accumulator
-{
-    uint8_t *addr = getAddress(amode);
-
-    switch(amode)
-    {
-        case ACCUMULATOR:
-            m_RegPC += 1;
-            m_Cycles += 2;
-            break;
-        case ZERO_PAGE:
-            m_RegPC += 2;
-            m_Cycles += 5;
-            break;
-        case ZERO_PAGE_X:
-            m_RegPC += 2;
-            m_Cycles += 6;
-            break;
-        case ABSOLUTE:
-            m_RegPC += 3;
-            m_Cycles += 6;
-            break;
-        case ABSOLUTE_X:
-            m_RegPC += 3;
-            m_Cycles += 7;
-            break;
-        default:
-            {
-                std::stringstream emsg;
-                emsg << "ASL error address mode @ PC:" << std::hex << "0x" << m_RegPC;
-                printError(emsg.str());
-            }
-            return;
-            break;
-    }
-
-    setFlag(FLAG_CARRY, *addr & 0x80);
-    *addr = (*addr << 1) & 0xff;
-    setFlag(FLAG_ZERO, *addr == 0x00);
-    setFlag(FLAG_SIGN, *addr & 0x80);
-
-}
-
-// BCC branch on carry clear
-// branch if c == 0
-void C6502::BCC(ADDRESS_MODE amode)
-{
-    need to test this
-    switch(amode)
-    {
-        case RELATIVE:
-            m_Cycles += 2;
-            m_RegPC += 2;
-        break;
-        default:
-            {
-                std::stringstream emsg;
-                emsg << "BCC error address mode @ PC:" << std::hex << "0x" << m_RegPC;
-                printError(emsg.str());
-            }
-            return;
-            break;
-    }
-
-    if(getFlag(FLAG_CARRY))
-    {
-        int8_t offset = m_Mem[ (m_RegPC-2) + 1];
-        int32_t pc = (m_RegPC-2) + offset;
-
-        if( ( (m_RegPC-2) & 0xff00) != ( pc & 0xff00) ) m_Cycles += 2;
-        else m_Cycles += 1;
-
-        m_RegPC = uint16_t(pc);
-    }
-}
-
-// load accumator with memory, a = m
-// LDA
-void C6502::LDA(ADDRESS_MODE amode)
-{
-    uint8_t *addr = getAddress(amode);
-
-    switch(amode)
-    {
-        case IMMEDIATE:
-            m_RegPC += 2;
-            m_Cycles += 2;
-            break;
-        case ZERO_PAGE:
-            m_RegPC += 2;
-            m_Cycles += 3;
-            break;
-        case ZERO_PAGE_X:
-            m_RegPC += 2;
-            m_Cycles += 4;
-            break;
-        case ABSOLUTE:
-            m_RegPC += 3;
-            m_Cycles += 4;
-            break;
-        case ABSOLUTE_X:
-            if(m_RegX + m_RegPC+1 > 0xff) m_Cycles++;
-            m_RegPC += 3;
-            m_Cycles += 4;
-            break;
-        case ABSOLUTE_Y:
-            if(m_RegY + m_RegPC+1 > 0xff) m_Cycles++;
-            m_RegPC += 3;
-            m_Cycles += 4;
-            break;
-        case INDIRECT_X:
-            m_RegPC += 2;
-            m_Cycles += 6;
-            break;
-        case INDIRECT_Y:
-            if( m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
-            m_RegPC += 2;
-            m_Cycles += 5;
-            break;
-        default:
-            {
-                std::stringstream emsg;
-                emsg << "LDA error address mode @ PC:" << std::hex << "0x" << m_RegPC;
-                printError(emsg.str());
-            }
-            return;
-            break;
-    }
-
-    m_RegA = *addr;
-}
-
-// load register x with memory, regx = m
-// LDX
-void C6502::LDX(ADDRESS_MODE amode)
-{
-    uint8_t *addr = getAddress(amode);
-
-    switch(amode)
-    {
-        case IMMEDIATE:
-            m_RegPC += 2;
-            m_Cycles += 2;
-            break;
-        case ZERO_PAGE:
-            m_RegPC += 2;
-            m_Cycles += 3;
-            break;
-        case ZERO_PAGE_Y:
-            m_RegPC += 2;
-            m_Cycles += 4;
-            break;
-        case ABSOLUTE:
-            m_RegPC += 3;
-            m_Cycles += 4;
-            break;
-        case ABSOLUTE_Y:
-            if(m_RegY + m_RegPC+1 > 0xff) m_Cycles++;
-            m_RegPC += 3;
-            m_Cycles += 4;
-            break;
-        default:
-            {
-                std::stringstream emsg;
-                emsg << "LDX error address mode @ PC:" << std::hex << "0x" << m_RegPC;
-                printError(emsg.str());
-            }
-            return;
-            break;
-    }
-
-    m_RegX = *addr;
-}
-
-// load register y with memory, regy = m
-// LDY
-void C6502::LDY(ADDRESS_MODE amode)
-{
-    uint8_t *addr = getAddress(amode);
-
-    switch(amode)
-    {
-        case IMMEDIATE:
-            m_RegPC += 2;
-            m_Cycles += 2;
-            break;
-        case ZERO_PAGE:
-            m_RegPC += 2;
-            m_Cycles += 3;
-            break;
-        case ZERO_PAGE_X:
-            m_RegPC += 2;
-            m_Cycles += 4;
-            break;
-        case ABSOLUTE:
-            m_RegPC += 3;
-            m_Cycles += 4;
-            break;
-        case ABSOLUTE_X:
-            if(m_RegY + m_RegPC+1 > 0xff) m_Cycles++;
-            m_RegPC += 3;
-            m_Cycles += 4;
-            break;
-        default:
-            {
-                std::stringstream emsg;
-                emsg << "LDY error address mode @ PC:" << std::hex << "0x" << m_RegPC;
-                printError(emsg.str());
-            }
-            return;
-            break;
-    }
-
-    m_RegY = *addr;
-}
-
-
-//////////////////////////////
-// DEBUG CONSOLE
-void C6502::debugConsole()
-{
-    bool quit = false;
-
-    while(!quit)
-    {
-        std::string buf;
-        std::vector<std::string> words;
-
-        std::cout << "C6502> ";
-
-        std::getline(std::cin, buf);
-
-        // strip words and white space
-        while(!buf.empty())
-        {
-            size_t cpos = buf.find_first_of(' ');
-
-            if(cpos == 0)
-            {
-                buf.erase(0,1);
-                continue;
-            }
-
-            words.push_back( buf.substr(0, cpos));
-            buf.erase(0, cpos);
-        }
-
-        if(words.empty()) continue;
-
-        if(words[0] == "quit" || words[0] == "exit") quit = true;
-        else if(words[0] == "help")
-        {
-            std::cout << "quit - exit console" << std::endl;
-            std::cout << "help - show this menu" << std::endl;
-            std::cout << "show - show relevant CPU information" << std::endl;
-            std::cout << "step - step next instruction" << std::endl;
-            std::cout << "r <addr> [count] - read value at memory address and optional additional bytes" << std::endl;
-            std::cout << "w <addr> <byte> - write byte to memory address" << std::endl;
-            std::cout << "reset - clear registers, stack pointer, p counter" << std::endl;
-            std::cout << "clearmem - clear all memory" << std::endl;
-            std::cout << "dumpmem [file] - dump memory, optionally to file" << std::endl;
-            std::cout << "loadmem <file> [offset] - load memory from file at optional offset" << std::endl;
-            std::cout << "seta <byte> - set accumulator" << std::endl;
-            std::cout << "setx <byte> - set register x" << std::endl;
-            std::cout << "sety <byte> - set register y" << std::endl;
-            std::cout << "setpc <address> - set program counter to address" << std::endl;
-
-        }
-        else if(words[0] == "show")
-        {
-            std::cout << "C6502" << std::endl;
-            std::cout << "-----" << std::endl;
-            std::cout << "Accumulator      = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegA) << std::endl;
-            std::cout << "Register X       = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegX) << std::endl;
-            std::cout << "Register Y       = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegY) << std::endl;
-            std::cout << "Stack Pointer    = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegSP) << std::endl;
-            std::cout << "Program Counter  = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegPC) << std::endl;
-            std::cout << "Flags:" << std::endl;
-            std::cout << "  Carry            = " << getFlag(FLAG_CARRY) << std::endl;
-            std::cout << "  Zero             = " << getFlag(FLAG_ZERO) << std::endl;
-            std::cout << "  Interrupt Enable = " << getFlag(FLAG_INTERRUPT_ENABLE) << std::endl;
-            std::cout << "  Decimal Mode     = " << getFlag(FLAG_DECIMAL_MODE) << std::endl;
-            std::cout << "  SW Interrupt     = " << getFlag(FLAG_SOFTWARE_INTERRUPT) << std::endl;
-            std::cout << "  NOT USED         = " << getFlag(FLAG_NOT_USED) << std::endl;
-            std::cout << "  Overflow         = " << getFlag(FLAG_OVERFLOW) << std::endl;
-            std::cout << "  Sign             = " << getFlag(FLAG_SIGN) << std::endl;
-
-        }
-        else if(words[0] == "w" || words[0] == "r")
-        {
-            uint16_t addr;
-            std::stringstream addrss;
-
-            if(words[1].size() >= 3)
-                if(words[1][1] == 'x') words[1].erase(0,2);
-
-            // convert hex string to value
-            addrss << std::hex << words[1];
-            addrss >> addr;
-
-            // write memory
-            if(words[0] == "w")
-            {
-                if(words.size() == 3)
-                {
-                    int wval;
-                    std::stringstream wss;
-
-                    if(words[2].size() >= 3)
-                        if(words[2][1] == 'x') words[2].erase(0,2);
-
-                    wss << std::hex << words[2];
-                    wss >> wval;
-
-                    if(wval <= 0xff)
-                    {
-                        std::cout << std::hex << std::setfill('0') << std::setw(4) << addr << " = " << wval << std::endl;
-                        m_Mem[addr] = uint8_t(wval);
-                    }
-                    else std::cout << "Value larger than 1 byte!" << std::endl;
-                }
-                else std::cout << "Invalid parameters!  w <addr> <byte>" << std::endl;
-            }
-            // read memory
-            else
-            {
-                int bcount = 1;
-                if(words.size() == 3) bcount = atoi(words[2].c_str());
-
-                for(int i = 0; i < bcount; i++)
-                {
-                    std::cout << std::hex << std::setfill('0') << std::setw(4) << addr+i << ": ";
-                    std::cout << std::setfill('0') << std::setw(2) << int(m_Mem[addr+i]) << std::endl;
-                }
-
-            }
-        }
-        else if(words[0] == "step")
-        {
-            std::cout << "Executing opcode : " << std::hex << int(m_Mem[m_RegPC]) << std::endl;
-            if(!execute(m_Mem[m_RegPC]))
-            {
-                std::cout << "Opcode undefined : " << std::hex << int(m_Mem[m_RegPC]) << std::endl;
-            }
-        }
-        else if(words[0] == "reset")
-        {
-            std::cout << "Resetting C6502..." << std::endl;
-            init();
-        }
-        else if(words[0] == "clearmem")
-        {
-            for(unsigned int i = 0; i < m_MemSize; i++)
-            {
-                m_Mem[i] = 0x0;
-            }
-        }
-        else if(words[0] == "dumpmem")
-        {
-            if(words.size() == 1)
-            {
-                for(unsigned int i = 0; i < m_MemSize/16; i++)
-                {
-                    std::cout << std::hex << std::setfill('0') << std::setw(4) << i*16 << ": ";
-                    for(int n = 0; n < 16; n++)
-                        std::cout << std::hex << std::setfill('0') << std::setw(2) << int(m_Mem[i*16 + n]) << " ";
-                    std::cout << std::endl;
-                }
-            }
-            else if(words.size() == 2)
-            {
-                std::ofstream ofile;
-                unsigned int lastentry = 0;
-
-                // find last non zero data
-                for(int i = m_MemSize-1; i >= 0; i--)
-                {
-                    if(m_Mem[i] != 0)
-                    {
-                        lastentry = i;
-                        break;
-                    }
-                }
-
-                // open output file for writing
-                ofile.open(words[1].c_str(), std::ios::binary);
-
-                if(ofile.is_open())
-                {
-
-                    // write all memory to file, stopping at last non-zero address
-                    for(unsigned int i = 0; i <= lastentry; i++) ofile.put( (unsigned char)( int(m_Mem[i])) );
-                    ofile.close();
-                    std::cout << "Wrote " << std::dec << lastentry + 1 << " bytes to " << words[1] << std::endl;
-
-                }
-                else std::cout << "Error opening file " << words[1] << std::endl;
-            }
-
-        }
-        else if(words[0] == "loadmem")
-        {
-            int loffset = 0;
-
-            if(words.size() >= 2 && words.size() <= 3)
-            {
-                if(words.size() == 3) loffset = atoi(words[2].c_str());
-
-                std::ifstream ifile;
-
-                ifile.open(words[1].c_str(), std::ios::binary);
-
-                if(ifile.is_open())
-                {
-                    int bytes = 0;
-
-                    while(!ifile.eof())
-                    {
-                        uint8_t data = uint8_t(ifile.get());
-                        if(!ifile.eof())
-                        {
-                            m_Mem[loffset + bytes] = data;
-                            bytes++;
-                        }
-                    }
-                    std::cout << "Loaded " << std::dec << bytes << " bytes from " << words[1];
-                    std::cout << " starting at 0x" << std::hex << std::setfill('0') << std::setw(4) << loffset << std::endl;
-                }
-                else std::cout << "Error opening file " << words[1] << std::endl;
-
-            }
-            else std::cout << "Incorrect parameters : loadmem <file> [offset]" << std::endl;
-        }
-        else if(words[0] == "seta")
-        {
-            if(words.size() == 2)
-            {
-                int val;
-
-                std::stringstream bss;
-                bss << std::hex << words[1];
-
-                bss >> val;
-                if( val <= 0xff)
-                {
-                    m_RegA = val;
-                    std::cout << "Accumulator = " << std::hex << std::setfill('0') << std::setw(2) << int(m_RegA) << std::endl;
-                }
-                else std::cout << "Value is larger than 1 byte : " << val << std::endl;
-            }
-            else std::cout << "Invalid parameters." << std::endl;
-        }
-        else if(words[0] == "setx")
-        {
-            if(words.size() == 2)
-            {
-                int val;
-
-                std::stringstream bss;
-                bss << std::hex << words[1];
-
-                bss >> val;
-                if( val <= 0xff)
-                {
-                    m_RegX = val;
-                    std::cout << "Register X = " << std::hex << std::setfill('0') << std::setw(2) << int(m_RegX) << std::endl;
-                }
-                else std::cout << "Value is larger than 1 byte : " << val << std::endl;
-            }
-            else std::cout << "Invalid parameters." << std::endl;
-        }
-        else if(words[0] == "sety")
-        {
-            if(words.size() == 2)
-            {
-                int val;
-
-                std::stringstream bss;
-                bss << std::hex << words[1];
-
-                bss >> val;
-                if( val <= 0xff)
-                {
-                    m_RegY = val;
-                    std::cout << "Register Y = " << std::hex << std::setfill('0') << std::setw(2) << int(m_RegY) << std::endl;
-                }
-                else std::cout << "Value is larger than 1 byte : " << val << std::endl;
-            }
-            else std::cout << "Invalid parameters." << std::endl;
-        }
-        else if(words[0] == "setpc")
-        {
-            if(words.size() == 2)
-            {
-                unsigned int addr;
-
-                std::stringstream wss;
-                // strip 0x prefix if found
-                if(words[1][1] == 'x') words[1].erase(0,2);
-
-                wss << std::hex << words[1];
-                wss >> addr;
-
-                m_RegPC = uint16_t(addr);
-
-            }
-        }
-        else
-        {
-            std::cout << "Unknown command - type help" << std::endl;
-        }
-    }
 }
