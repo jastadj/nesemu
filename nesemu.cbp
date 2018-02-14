@@ -31,10 +31,14 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="c2c02.cpp" />
+		<Unit filename="c2c02.hpp" />
 		<Unit filename="c6502.cpp" />
 		<Unit filename="c6502.hpp" />
 		<Unit filename="c6502_debug.cpp" />
 		<Unit filename="c6502_ops.cpp" />
+		<Unit filename="cartridge.cpp" />
+		<Unit filename="cartridge.hpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="nes.cpp" />
 		<Unit filename="nes.hpp" />
