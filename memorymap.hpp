@@ -22,6 +22,9 @@ public:
     uint8_t **getMap() { return m_MemMap;}
     unsigned int getSize() { return m_MemSize;}
 
+    bool mirror(unsigned int start1, unsigned int end1, unsigned int start2, unsigned int end2);
+    bool clearMirror(unsigned int startaddress, unsigned int endaddress);
+
     bool write(unsigned int addresss, uint8_t val);
     uint8_t read(unsigned int addresss);
 };

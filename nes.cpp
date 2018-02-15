@@ -8,6 +8,15 @@ NES::NES()
     m_MemCPU = new MemoryMap(MEM_SIZE);
     std::cout << "Allocated " << MEM_SIZE << " bytes of memory.\n";
 
+    // configure cpu memory mirroring
+    m_MemCPU->mirror(0x0000, 0x07ff, 0x0800, 0x0fff);
+    m_MemCPU->mirror(0x0000, 0x07ff, 0x1000, 0x17ff);
+    m_MemCPU->mirror(0x0000, 0x07ff, 0x1800, 0x1fff);
+    // ppu i/o register mirroring (in cpu)
+    for(unsigned int i = 0x2008; i <= 0x3fff; i += 8) m_MemCPU->mirror(0x2000, 0x2007, i, i+7);
+
+
+
     // init PPU memory
     m_MemPPU = new MemoryMap(PPUMEM_SIZE);
     std::cout << "Allocated " << PPUMEM_SIZE << " bytes of PPU memory.\n";
@@ -32,8 +41,12 @@ bool NES::loadCartridge(std::string romfile)
 
     if(m_Cartridge->loadSuccessful())
     {
+        // clear cpu mirroring
+        // note : some mappers layout mirroring differently
+        m_MemCPU->clearMirror(0x8000, 0xffff);
+
         // clear exisiting CPU memory
-        m_MemCPU->clear(0x6000, 0xffff);
+        m_MemCPU->clear(0x8000, 0xffff);
 
         // PRG RAM 0x6000 - 0x7fff (battery backed persistent ram)
 
