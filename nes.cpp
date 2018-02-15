@@ -135,9 +135,9 @@ void NES::debugConsole(std::string prompt)
             std::cout << "show - show relevant NES information" << std::endl;
             std::cout << "cpu - enter CPU debug console" << std::endl;
             std::cout << "ppu - enter PPU debug console" << std::endl;
-            std::cout << "showcart - show cartridge information" << std::endl;
-            std::cout << "unloadcart - unload cartridge" << std::endl;
-            std::cout << "loadcart <filename> - load cart from file" << std::endl;
+            std::cout << "showrom - show rom/cartridge information" << std::endl;
+            std::cout << "unloadrom - unload rom/cartridge" << std::endl;
+            std::cout << "loadrom <filename> - load rom/cart from file" << std::endl;
         }
         else if(words[0] == "show")
         {
@@ -153,12 +153,12 @@ void NES::debugConsole(std::string prompt)
             m_PPU->debugConsole("NES.PPU> ");
             std::cout << "Exiting PPU console..." << std::endl << std::endl;
         }
-        else if(words[0] == "showcart")
+        else if(words[0] == "showrom")
         {
             if(m_Cartridge) m_Cartridge->show();
             else std::cout << "No cartridge loaded." << std::endl;
         }
-        else if(words[0] == "unloadcart")
+        else if(words[0] == "unloadrom")
         {
             if(m_Cartridge)
             {
@@ -169,7 +169,7 @@ void NES::debugConsole(std::string prompt)
             else std::cout << "No cartridge loaded!" << std::endl;
 
         }
-        else if(words[0] == "loadcart")
+        else if(words[0] == "loadrom")
         {
             if(words.size() == 2)
             {
@@ -177,6 +177,7 @@ void NES::debugConsole(std::string prompt)
             }
             else std::cout << "Invalid parameters!" << std::endl;
         }
+        else std::cout << "Unknown command - type help" << std::endl;
 
     }
 }

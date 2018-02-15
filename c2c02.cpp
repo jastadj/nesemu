@@ -69,7 +69,7 @@ void C2C02::debugConsole(std::string prompt)
             std::cout << "clearmem - clear all memory" << std::endl;
             std::cout << "dumpmem [file] - dump memory, optionally to file" << std::endl;
             std::cout << "loadmem <file> [offset] - load memory from file at optional offset" << std::endl;
-            std::cout << "printpattern <offset> - print pattern at offset" << std::endl;
+            std::cout << "printpattern | showpattern <offset> - print pattern at offset" << std::endl;
         }
         else if(words[0] == "show")
         {
@@ -207,7 +207,7 @@ void C2C02::debugConsole(std::string prompt)
             }
             else std::cout << "Incorrect parameters : loadmem <file> [offset]" << std::endl;
         }
-        else if(words[0] == "printpattern")
+        else if(words[0] == "printpattern" || words[0] == "showpattern")
         {
             if(words.size() == 2)
             {
@@ -236,7 +236,7 @@ void C2C02::debugConsole(std::string prompt)
                         for(int k = 0; k < 8; k++)
                         {
                             if( (m_Mem[i] >> (7 - k)) & 0x1) pat[i - poffset][k] = '1';
-                            else pat[i - poffset][k] = '0';
+                            else pat[i - poffset][k] = '.';
                         }
                     }
 
