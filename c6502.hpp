@@ -24,7 +24,7 @@ enum ADDRESS_MODE{IMMEDIATE, ZERO_PAGE, ZERO_PAGE_X, ZERO_PAGE_Y, ABSOLUTE, ABSO
 
 class C6502
 {
-private:
+protected:
 
     // memory
     uint8_t *m_Mem;
@@ -144,7 +144,7 @@ private:
 public:
     C6502(uint8_t *memory, unsigned int memory_size);
 
-    void debugConsole();
+    virtual void debugConsole(std::string prompt);
 
 
 };

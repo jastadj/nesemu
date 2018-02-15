@@ -27,33 +27,40 @@ Cartridge::Cartridge(std::string romfile)
         m_Trainer = new uint8_t[512];
 
         for(int i = 0; i < 512; i++) m_Trainer[i] = uint8_t(ifile.get());
-
-
     }
     else m_Trainer = NULL;
 
-
-    // read PRG ROM
-    if(!getPRGROMSize()) m_PRGROM = NULL;
+    // read PRG ROM - it better have prg data!
+    if(!getPRGROMSizeByte()) m_PRGROM = NULL;
     else
     {
-        m_PRGROM = new uint8_t [getPRGROMSize()];
-        for(int i = 0; i < getPRGROMSize(); i++)
-        {
-            m_PRGROM[i] = uint8_t(ifile.get());
+        m_PRGROM = new uint8_t [0x8000];
 
+        for(int i = 0; i < 0x8000; i++)
+        {
+            // if PRG rom size is 1, mirror 0x0000-0x3ffff to 0x4000 - 0x7fff
+            if(getPRGROMSizeByte() == 1 && i >= 0x4000) m_PRGROM[i] = m_PRGROM[i-0x4000];
+            // else PRG rom size of 2 will fill
+            else m_PRGROM[i] = uint8_t(ifile.get());
+
+            // check EOF error
+            if(ifile.eof()) { ifile.close(); return; }
         }
 
     }
 
     // read CHR ROM
-    if(!getCHRROMSIZE()) m_CHRROM = NULL;
+    if(!getCHRROMSizeByte()) m_CHRROM = NULL;
     else
     {
-        m_CHRROM = new uint8_t [getCHRROMSIZE()];
-        for(int i = 0; i < getCHRROMSIZE(); i++)
+        m_CHRROM = new uint8_t [0x4000];
+        for(int i = 0; i < 0x4000; i++)
         {
-            m_CHRROM[i] = uint8_t(ifile.get());
+            // if CHR rom size is 1, mirror data
+            if(getCHRROMSizeByte() == 1 && i >= 0x2000) m_CHRROM[i] = m_CHRROM[i - 0x2000];
+            else m_CHRROM[i] = uint8_t(ifile.get());
+
+            // check EOF error
             if(ifile.eof()) { ifile.close(); return; }
         }
 
@@ -78,11 +85,11 @@ void Cartridge::show()
     for(int i = 0; i < 16; i++) std::cout << std::hex << std::setw(2) << std::setfill('0') << int(m_Header[i]) << " ";
     std::cout << std::endl;
     std::cout << "Load successful    : " << loadSuccessful() << std::endl;
-    std::cout << "PRG ROM Size       : 0x" << getPRGROMSize() << std::endl;
-    std::cout << "CHR ROM Size       : 0x" << getCHRROMSIZE() << std::endl;
+    std::cout << "PRG ROM Size Byte  : 0x" << getPRGROMSizeByte() << std::endl;
+    std::cout << "CHR ROM Size Byte  : 0x" << getCHRROMSizeByte() << std::endl;
     std::cout << "Vertically Mirrored: " << isVerticallyMirrored() << std::endl;
     std::cout << "Battery-backed     : " << isBatteryBacked() << std::endl;
-    std::cout << "Trained Data       : " << hasTrainerData() << std::endl;
+    std::cout << "Trainer Data       : " << hasTrainerData() << std::endl;
     std::cout << "Ignore Mirroring   : " << IgnoreMirroring() << std::endl;
     std::cout << "Mapper Number      : 0x" << int(getMapperNumber()) << std::endl;
     std::cout << "VS Unisystem       : " << VSUnisystem() << std::endl;

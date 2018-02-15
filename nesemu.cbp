@@ -42,6 +42,8 @@
 		<Unit filename="main.cpp" />
 		<Unit filename="nes.cpp" />
 		<Unit filename="nes.hpp" />
+		<Unit filename="rp2a03.cpp" />
+		<Unit filename="rp2a03.hpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />

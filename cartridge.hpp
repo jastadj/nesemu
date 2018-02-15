@@ -24,10 +24,11 @@ public:
 
     bool loadSuccessful() { return m_LoadedSuccessfully;}
 
-    int getPRGROMSize() { return 0x4000 * m_Header[4];}
-    int getCHRROMSIZE() { return 0x2000 * m_Header[5];}
+    int getPRGROMSizeByte() { return m_Header[4];}
+    int getCHRROMSizeByte() { return m_Header[5];}
 
     const uint8_t *getPRGROM() const { return m_PRGROM;}
+    const uint8_t *getCHRROM() const { return m_CHRROM;}
 
     // flag 6
     bool isVerticallyMirrored() { return m_Header[6] & 0x1;} // false = horizontally mirrored

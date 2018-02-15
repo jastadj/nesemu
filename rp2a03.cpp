@@ -1,13 +1,16 @@
-#include "c6502.hpp"
+#include "rp2a03.hpp"
 
 #include <sstream>
 #include <vector>
 #include <iomanip>
 #include <fstream>
 
-//////////////////////////////
-// DEBUG CONSOLE
-void C6502::debugConsole(std::string prompt)
+RP2A03::RP2A03(uint8_t *memory, unsigned int memory_size) : C6502(memory, memory_size)
+{
+
+}
+
+void RP2A03::debugConsole(std::string prompt)
 {
     bool quit = false;
 

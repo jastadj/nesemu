@@ -5,8 +5,8 @@ int main(int argc, char *argv[])
 
     NES nes;
 
-    nes.loadCartridge(".\\test\\nestest.nes");
-    nes.debugC6502Console();
+    nes.loadCartridge(".\\test\\donkeyk.nes");
+    nes.debugConsole("NES> ");
 
 
     return 0;
