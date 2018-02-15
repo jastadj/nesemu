@@ -40,6 +40,8 @@
 		<Unit filename="cartridge.cpp" />
 		<Unit filename="cartridge.hpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="memorymap.cpp" />
+		<Unit filename="memorymap.hpp" />
 		<Unit filename="nes.cpp" />
 		<Unit filename="nes.hpp" />
 		<Unit filename="rp2a03.cpp" />

@@ -6,7 +6,7 @@
 #include <fstream>
 
 
-C2C02::C2C02(uint8_t *memory, unsigned int memory_size)
+C2C02::C2C02(uint8_t **memory, unsigned int memory_size)
 {
     m_MemSize = memory_size;
     m_Mem = memory;
@@ -104,7 +104,7 @@ void C2C02::debugConsole(std::string prompt)
                     if(wval <= 0xff)
                     {
                         std::cout << std::hex << std::setfill('0') << std::setw(4) << addr << " = " << wval << std::endl;
-                        m_Mem[addr] = uint8_t(wval);
+                        *m_Mem[addr] = uint8_t(wval);
                     }
                     else std::cout << "Value larger than 1 byte!" << std::endl;
                 }
@@ -119,7 +119,7 @@ void C2C02::debugConsole(std::string prompt)
                 for(int i = 0; i < bcount; i++)
                 {
                     std::cout << std::hex << std::setfill('0') << std::setw(4) << addr+i << ": ";
-                    std::cout << std::setfill('0') << std::setw(2) << int(m_Mem[addr+i]) << std::endl;
+                    std::cout << std::setfill('0') << std::setw(2) << int(*m_Mem[addr+i]) << std::endl;
                 }
 
             }
@@ -128,7 +128,7 @@ void C2C02::debugConsole(std::string prompt)
         {
             for(unsigned int i = 0; i < m_MemSize; i++)
             {
-                m_Mem[i] = 0x0;
+                *m_Mem[i] = 0x0;
             }
         }
         else if(words[0] == "dumpmem")
@@ -139,7 +139,7 @@ void C2C02::debugConsole(std::string prompt)
                 {
                     std::cout << std::hex << std::setfill('0') << std::setw(4) << i*16 << ": ";
                     for(int n = 0; n < 16; n++)
-                        std::cout << std::hex << std::setfill('0') << std::setw(2) << int(m_Mem[i*16 + n]) << " ";
+                        std::cout << std::hex << std::setfill('0') << std::setw(2) << int(*m_Mem[i*16 + n]) << " ";
                     std::cout << std::endl;
                 }
             }
@@ -151,7 +151,7 @@ void C2C02::debugConsole(std::string prompt)
                 // find last non zero data
                 for(int i = m_MemSize-1; i >= 0; i--)
                 {
-                    if(m_Mem[i] != 0)
+                    if(*m_Mem[i] != 0)
                     {
                         lastentry = i;
                         break;
@@ -165,7 +165,7 @@ void C2C02::debugConsole(std::string prompt)
                 {
 
                     // write all memory to file, stopping at last non-zero address
-                    for(unsigned int i = 0; i <= lastentry; i++) ofile.put( (unsigned char)( int(m_Mem[i])) );
+                    for(unsigned int i = 0; i <= lastentry; i++) ofile.put( (unsigned char)( int(*m_Mem[i])) );
                     ofile.close();
                     std::cout << "Wrote " << std::dec << lastentry + 1 << " bytes to " << words[1] << std::endl;
 
@@ -195,7 +195,7 @@ void C2C02::debugConsole(std::string prompt)
                         uint8_t data = uint8_t(ifile.get());
                         if(!ifile.eof())
                         {
-                            m_Mem[loffset + bytes] = data;
+                            *m_Mem[loffset + bytes] = data;
                             bytes++;
                         }
                     }
@@ -224,7 +224,7 @@ void C2C02::debugConsole(std::string prompt)
                 pat.resize(8);
                 for(int i = 0; i < 8; i++) pat[i].resize(8);
 
-                if(poffset + 15 < m_MemSize)
+                if( int(poffset + 15) < int(m_MemSize) )
                 {
                     std::cout << "Printing pattern ";
                     std::cout << std::hex << std::setw(4) << std::setfill('0') << int(poffset) << " - ";
@@ -235,7 +235,7 @@ void C2C02::debugConsole(std::string prompt)
                     {
                         for(int k = 0; k < 8; k++)
                         {
-                            if( (m_Mem[i] >> (7 - k)) & 0x1) pat[i - poffset][k] = '1';
+                            if( (*m_Mem[i] >> (7 - k)) & 0x1) pat[i - poffset][k] = '1';
                             else pat[i - poffset][k] = '.';
                         }
                     }
@@ -245,7 +245,7 @@ void C2C02::debugConsole(std::string prompt)
                     {
                         for(int k = 0; k < 8; k++)
                         {
-                            if( (m_Mem[i] >> (7 - k)) & 0x1)
+                            if( (*m_Mem[i] >> (7 - k)) & 0x1)
                             {
                                 if(pat[i - poffset - 8][k]) pat[i - poffset - 8][k] = '3';
                                 else pat[i - poffset - 8][k] = '2';

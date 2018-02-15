@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <fstream>
 
-C6502::C6502(uint8_t *memory, unsigned int memory_size)
+C6502::C6502(uint8_t **memory, unsigned int memory_size)
 {
     m_MemSize = memory_size;
     m_Mem = memory;
@@ -684,58 +684,58 @@ uint8_t *C6502::getAddress(ADDRESS_MODE amode)
         break;
     // immediate gets next mem byte
     case IMMEDIATE:
-        m_ImmediateTemp = m_Mem[m_RegPC + 1];
+        m_ImmediateTemp = *m_Mem[m_RegPC + 1];
         return &m_ImmediateTemp;
         break;
     // zero page gets address of 0x00YY where YY is next mem byte
     case ZERO_PAGE:
-        return &m_Mem[ m_Mem[m_RegPC + 1] ];
+        return m_Mem[ *m_Mem[m_RegPC + 1] ];
         break;
     // zero page x gets address of 0x00YY where YY is REGX + next mem byte
     case ZERO_PAGE_X:
-        return &m_Mem[ m_RegX + m_Mem[m_RegPC + 1] ];
+        return m_Mem[ m_RegX + *m_Mem[m_RegPC + 1] ];
         break;
     // zero page y gets address ox 0x00YY where YY is REGY + next mem byte
     case ZERO_PAGE_Y:
-        return &m_Mem[ m_RegY + m_Mem[m_RegPC + 1] ];
+        return m_Mem[ m_RegY + *m_Mem[m_RegPC + 1] ];
         break;
     // ABSOLUTE gets address from next two bytes (LSB first)
     case ABSOLUTE:
-        return &m_Mem[ ( (m_Mem[m_RegPC + 2]) << 8) + m_Mem[m_RegPC+1] ];
+        return m_Mem[ ( (*m_Mem[m_RegPC + 2]) << 8) + *m_Mem[m_RegPC+1] ];
         break;
     // ABSOLUTE X gets address from next two bytes + REGX
     case ABSOLUTE_X:
-        return &m_Mem[ ( (m_Mem[m_RegPC + 2]) << 8) + m_Mem[m_RegPC+1] + m_RegX];
+        return m_Mem[ ( (*m_Mem[m_RegPC + 2]) << 8) + *m_Mem[m_RegPC+1] + m_RegX];
         break;
     // ABSOLUTE X gets address from next two bytes + REGY
     case ABSOLUTE_Y:
-            return &m_Mem[ ( (m_Mem[m_RegPC + 2]) << 8) + m_Mem[m_RegPC+1] + m_RegY];
+            return m_Mem[ ( (*m_Mem[m_RegPC + 2]) << 8) + *m_Mem[m_RegPC+1] + m_RegY];
         break;
     case INDIRECT_X:
         {
-            uint16_t addr = m_RegX + m_Mem[m_RegPC + 1];
+            uint16_t addr = m_RegX + *m_Mem[m_RegPC + 1];
             if(addr > 0xff) addr -= 0xff; // rollover zero-page index
-            return &m_Mem[  (m_Mem[addr+1] << 8) + m_Mem[addr]    ];
+            return m_Mem[  (*m_Mem[addr+1] << 8) + *m_Mem[addr]    ];
         }
         break;
     case INDIRECT_Y:
         {
-            uint16_t lobyte = m_Mem[m_RegPC + 1];
-            return &m_Mem[  (m_Mem[lobyte+1] << 8) + m_Mem[lobyte] + m_RegY ];
+            uint16_t lobyte = *m_Mem[m_RegPC + 1];
+            return m_Mem[  (*m_Mem[lobyte+1] << 8) + *m_Mem[lobyte] + m_RegY ];
         }
         break;
     // only used for JUMP
     case INDIRECT:
         {
-            uint16_t lobyte = m_Mem[m_RegPC + 1] + (m_Mem[m_RegPC + 2] << 8);
-            return &m_Mem[ m_Mem[lobyte] + (m_Mem[lobyte+1] << 8)  ];
+            uint16_t lobyte = *m_Mem[m_RegPC + 1] + (*m_Mem[m_RegPC + 2] << 8);
+            return m_Mem[ *m_Mem[lobyte] + (*m_Mem[lobyte+1] << 8)  ];
         }
         break;
     case RELATIVE:
         {
-            int8_t offset = m_Mem[ m_RegPC + 1];
+            int8_t offset = *m_Mem[ m_RegPC + 1];
             int32_t pc = m_RegPC + offset;
-            return &m_Mem[ uint16_t(pc)];
+            return m_Mem[ uint16_t(pc)];
         }
         break;
     case IMPLIED:

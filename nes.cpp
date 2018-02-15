@@ -5,42 +5,21 @@
 NES::NES()
 {
     // init memory
-    m_Mem = new uint8_t [MEM_SIZE];
+    m_MemCPU = new MemoryMap(MEM_SIZE);
     std::cout << "Allocated " << MEM_SIZE << " bytes of memory.\n";
-    clearMemory(m_Mem);
 
     // init PPU memory
-    m_PPUMem = new uint8_t [PPUMEM_SIZE];
+    m_MemPPU = new MemoryMap(PPUMEM_SIZE);
     std::cout << "Allocated " << PPUMEM_SIZE << " bytes of PPU memory.\n";
-    clearMemory(m_PPUMem);
 
     // rom cartridge
     m_Cartridge = NULL;
 
     // init CPU
-    m_CPU = new RP2A03(m_Mem, MEM_SIZE);
+    m_CPU = new RP2A03(m_MemCPU->getMap(), MEM_SIZE);
 
     // init PPU
-    m_PPU = new C2C02(m_PPUMem, PPUMEM_SIZE);
-}
-
-// clear memory
-void NES::clearMemory(uint8_t *bank, uint16_t startaddress, uint16_t endaddress)
-{
-    if(endaddress == 0xffff && bank == m_PPUMem) endaddress = PPUMEM_SIZE - 1;
-
-    std::cout << "Clearing ";
-    if(bank == m_Mem) std::cout << "CPU memory ";
-    else if(bank == m_PPUMem) std::cout << "PPU memory ";
-    std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << int(startaddress) << " - ";
-    std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << int(endaddress) << std::endl;
-
-
-
-    for(int i = 0; i <= int(endaddress); i++)
-    {
-        bank[i] = 0x00;
-    }
+    m_PPU = new C2C02(m_MemPPU->getMap(), PPUMEM_SIZE);
 }
 
 bool NES::loadCartridge(std::string romfile)
@@ -53,8 +32,8 @@ bool NES::loadCartridge(std::string romfile)
 
     if(m_Cartridge->loadSuccessful())
     {
-        // clear exisiting memory
-        clearMemory(m_Mem, 0x6000, 0xffff);
+        // clear exisiting CPU memory
+        m_MemCPU->clear(0x6000, 0xffff);
 
         // PRG RAM 0x6000 - 0x7fff (battery backed persistent ram)
 
@@ -66,7 +45,7 @@ bool NES::loadCartridge(std::string romfile)
 
             std::cout << "Copying PRG ROM to CPU memory." << std::endl;
 
-            for(int i = 0; i < 0x8000; i++)  m_Mem[prgoffset + i] = rom[i];
+            for(int i = 0; i < 0x8000; i++)  m_MemCPU->write(prgoffset + i, rom[i]);
         }
 
         // load CHR data from cartridge to PPU memory 0x0000 - 0x1fff
@@ -76,7 +55,7 @@ bool NES::loadCartridge(std::string romfile)
 
             std::cout << "Copying CHR ROM to PPU memory." << std::endl;
 
-            for(int i = 0; i < 0x2000; i++) m_PPUMem[i] = rom[i];
+            for(int i = 0; i < 0x2000; i++) m_MemPPU->write(i, rom[i]);
         }
 
 

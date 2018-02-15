@@ -27,7 +27,7 @@ class C6502
 protected:
 
     // memory
-    uint8_t *m_Mem;
+    uint8_t **m_Mem;
     unsigned int m_MemSize;
 
     // memory map
@@ -142,7 +142,7 @@ protected:
     void printError(std::string errormsg);
 
 public:
-    C6502(uint8_t *memory, unsigned int memory_size);
+    C6502(uint8_t **memory, unsigned int memory_size);
 
     virtual void debugConsole(std::string prompt);
 

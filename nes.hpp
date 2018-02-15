@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <iostream>
 
+#include "memorymap.hpp"
 #include "rp2a03.hpp"
 #include "c2c02.hpp"
 #include "cartridge.hpp"
@@ -17,9 +18,8 @@ class NES
 private:
 
     // memory
-    uint8_t *m_Mem;
-    uint8_t *m_PPUMem;
-    void clearMemory(uint8_t *bank, uint16_t startaddress = 0x00, uint16_t endaddress = 0xffff);
+    MemoryMap *m_MemCPU;
+    MemoryMap *m_MemPPU;
 
     // rom cartridge
     Cartridge *m_Cartridge;

@@ -47,7 +47,7 @@ void C6502::ADC(ADDRESS_MODE amode)
             m_Cycles += 6;
             break;
         case INDIRECT_Y:
-            if( m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
+            if( *m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
             m_RegPC += 2;
             m_Cycles += 5;
             break;
@@ -117,7 +117,7 @@ void C6502::AND(ADDRESS_MODE amode)
             m_Cycles += 6;
             break;
         case INDIRECT_Y:
-            if( m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
+            if( *m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
             m_RegPC += 2;
             m_Cycles += 5;
             break;
@@ -203,7 +203,7 @@ void C6502::BCC(ADDRESS_MODE amode)
 
     if(!getFlag(FLAG_CARRY))
     {
-        int8_t offset = m_Mem[ (m_RegPC-2) + 1];
+        int8_t offset = *m_Mem[ (m_RegPC-2) + 1];
         int32_t pc = (m_RegPC-2) + offset;
 
         if( ( (m_RegPC-2) & 0xff00) != ( pc & 0xff00) ) m_Cycles += 2;
@@ -235,7 +235,7 @@ void C6502::BCS(ADDRESS_MODE amode)
 
     if(getFlag(FLAG_CARRY))
     {
-        int8_t offset = m_Mem[ (m_RegPC-2) + 1];
+        int8_t offset = *m_Mem[ (m_RegPC-2) + 1];
         int32_t pc = (m_RegPC-2) + offset;
 
         if( ( (m_RegPC-2) & 0xff00) != ( pc & 0xff00) ) m_Cycles += 2;
@@ -267,7 +267,7 @@ void C6502::BEQ(ADDRESS_MODE amode)
 
     if(getFlag(FLAG_ZERO))
     {
-        int8_t offset = m_Mem[ (m_RegPC-2) + 1];
+        int8_t offset = *m_Mem[ (m_RegPC-2) + 1];
         int32_t pc = (m_RegPC-2) + offset;
 
         if( ( (m_RegPC-2) & 0xff00) != ( pc & 0xff00) ) m_Cycles += 2;
@@ -332,7 +332,7 @@ void C6502::BMI(ADDRESS_MODE amode)
 
     if(getFlag(FLAG_SIGN))
     {
-        int8_t offset = m_Mem[ (m_RegPC-2) + 1];
+        int8_t offset = *m_Mem[ (m_RegPC-2) + 1];
         int32_t pc = (m_RegPC-2) + offset;
 
         if( ( (m_RegPC-2) & 0xff00) != ( pc & 0xff00) ) m_Cycles += 2;
@@ -364,7 +364,7 @@ void C6502::BNE(ADDRESS_MODE amode)
 
     if(!getFlag(FLAG_ZERO))
     {
-        int8_t offset = m_Mem[ (m_RegPC-2) + 1];
+        int8_t offset = *m_Mem[ (m_RegPC-2) + 1];
         int32_t pc = (m_RegPC-2) + offset;
 
         if( ( (m_RegPC-2) & 0xff00) != ( pc & 0xff00) ) m_Cycles += 2;
@@ -396,7 +396,7 @@ void C6502::BPL(ADDRESS_MODE amode)
 
     if(!getFlag(FLAG_SIGN))
     {
-        int8_t offset = m_Mem[ (m_RegPC-2) + 1];
+        int8_t offset = *m_Mem[ (m_RegPC-2) + 1];
         int32_t pc = (m_RegPC-2) + offset;
 
         if( ( (m_RegPC-2) & 0xff00) != ( pc & 0xff00) ) m_Cycles += 2;
@@ -451,7 +451,7 @@ void C6502::BVC(ADDRESS_MODE amode)
 
     if(!getFlag(FLAG_OVERFLOW))
     {
-        int8_t offset = m_Mem[ (m_RegPC-2) + 1];
+        int8_t offset = *m_Mem[ (m_RegPC-2) + 1];
         int32_t pc = (m_RegPC-2) + offset;
 
         if( ( (m_RegPC-2) & 0xff00) != ( pc & 0xff00) ) m_Cycles += 2;
@@ -483,7 +483,7 @@ void C6502::BVS(ADDRESS_MODE amode)
 
     if(getFlag(FLAG_OVERFLOW))
     {
-        int8_t offset = m_Mem[ (m_RegPC-2) + 1];
+        int8_t offset = *m_Mem[ (m_RegPC-2) + 1];
         int32_t pc = (m_RegPC-2) + offset;
 
         if( ( (m_RegPC-2) & 0xff00) != ( pc & 0xff00) ) m_Cycles += 2;
@@ -624,7 +624,7 @@ void C6502::CMP(ADDRESS_MODE amode)
             m_Cycles += 6;
             break;
         case INDIRECT_Y:
-            if( m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
+            if( *m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
             m_RegPC += 2;
             m_Cycles += 5;
             break;
@@ -849,7 +849,7 @@ void C6502::EOR(ADDRESS_MODE amode)
             m_Cycles += 6;
             break;
         case INDIRECT_Y:
-            if( m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
+            if( *m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
             m_RegPC += 2;
             m_Cycles += 5;
             break;
@@ -971,13 +971,13 @@ void C6502::JMP(ADDRESS_MODE amode)
     {
         case ABSOLUTE:
             m_Cycles += 3;
-            m_RegPC = ( (m_Mem[m_RegPC + 2]) << 8) + m_Mem[m_RegPC+1];
+            m_RegPC = ( (*m_Mem[m_RegPC + 2]) << 8) + *m_Mem[m_RegPC+1];
             break;
         case INDIRECT:
             m_Cycles += 5;
             {
-                uint16_t lobyte = m_Mem[m_RegPC + 1] + (m_Mem[m_RegPC + 2] << 8);
-                m_RegPC = m_Mem[lobyte] + (m_Mem[lobyte+1] << 8);
+                uint16_t lobyte = *m_Mem[m_RegPC + 1] + (*m_Mem[m_RegPC + 2] << 8);
+                m_RegPC = *m_Mem[lobyte] + (*m_Mem[lobyte+1] << 8);
             }
             break;
         default:
@@ -1002,7 +1002,7 @@ void C6502::JSR(ADDRESS_MODE amode)
             m_Cycles += 6;
             pushStack( (m_RegPC >> 8) & 0xff);
             pushStack(m_RegPC & 0xff);
-            m_RegPC = ( (m_Mem[m_RegPC + 2]) << 8) + m_Mem[m_RegPC+1];
+            m_RegPC = ( (*m_Mem[m_RegPC + 2]) << 8) + *m_Mem[m_RegPC+1];
             break;
         default:
             {
@@ -1054,7 +1054,7 @@ void C6502::LDA(ADDRESS_MODE amode)
             m_Cycles += 6;
             break;
         case INDIRECT_Y:
-            if( m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
+            if( *m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
             m_RegPC += 2;
             m_Cycles += 5;
             break;
@@ -1259,7 +1259,7 @@ void C6502::ORA(ADDRESS_MODE amode)
             m_Cycles += 6;
             break;
         case INDIRECT_Y:
-            //if( m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
+            //if( *m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
             m_RegPC += 2;
             m_Cycles += 5;
             break;
@@ -1548,7 +1548,7 @@ void C6502::SBC(ADDRESS_MODE amode)
             m_Cycles += 6;
             break;
         case INDIRECT_Y:
-            if( m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
+            if( *m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
             m_RegPC += 2;
             m_Cycles += 5;
             break;
@@ -1677,7 +1677,7 @@ void C6502::STA(ADDRESS_MODE amode)
             m_Cycles += 6;
             break;
         case INDIRECT_Y:
-            //if( m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
+            //if( *m_Mem[m_RegPC+1] + m_RegY > 0xff) m_Cycles++;
             m_RegPC += 2;
             m_Cycles += 6;
             break;

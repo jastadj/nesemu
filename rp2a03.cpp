@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <fstream>
 
-RP2A03::RP2A03(uint8_t *memory, unsigned int memory_size) : C6502(memory, memory_size)
+RP2A03::RP2A03(uint8_t **memory, unsigned int memory_size) : C6502(memory, memory_size)
 {
 
 }
@@ -115,7 +115,7 @@ void RP2A03::debugConsole(std::string prompt)
                     if(wval <= 0xff)
                     {
                         std::cout << std::hex << std::setfill('0') << std::setw(4) << addr << " = " << wval << std::endl;
-                        m_Mem[addr] = uint8_t(wval);
+                        *m_Mem[addr] = uint8_t(wval);
                     }
                     else std::cout << "Value larger than 1 byte!" << std::endl;
                 }
@@ -130,17 +130,17 @@ void RP2A03::debugConsole(std::string prompt)
                 for(int i = 0; i < bcount; i++)
                 {
                     std::cout << std::hex << std::setfill('0') << std::setw(4) << addr+i << ": ";
-                    std::cout << std::setfill('0') << std::setw(2) << int(m_Mem[addr+i]) << std::endl;
+                    std::cout << std::setfill('0') << std::setw(2) << int(*m_Mem[addr+i]) << std::endl;
                 }
 
             }
         }
         else if(words[0] == "step")
         {
-            std::cout << "Executing opcode : " << std::hex << int(m_Mem[m_RegPC]) << std::endl;
-            if(!execute(m_Mem[m_RegPC]))
+            std::cout << "Executing opcode : " << std::hex << int(*m_Mem[m_RegPC]) << std::endl;
+            if(!execute(*m_Mem[m_RegPC]))
             {
-                std::cout << "Opcode undefined : " << std::hex << int(m_Mem[m_RegPC]) << std::endl;
+                std::cout << "Opcode undefined : " << std::hex << int(*m_Mem[m_RegPC]) << std::endl;
             }
         }
         else if(words[0] == "reset")
@@ -152,7 +152,7 @@ void RP2A03::debugConsole(std::string prompt)
         {
             for(unsigned int i = 0; i < m_MemSize; i++)
             {
-                m_Mem[i] = 0x0;
+                *m_Mem[i] = 0x0;
             }
         }
         else if(words[0] == "dumpmem")
@@ -163,7 +163,7 @@ void RP2A03::debugConsole(std::string prompt)
                 {
                     std::cout << std::hex << std::setfill('0') << std::setw(4) << i*16 << ": ";
                     for(int n = 0; n < 16; n++)
-                        std::cout << std::hex << std::setfill('0') << std::setw(2) << int(m_Mem[i*16 + n]) << " ";
+                        std::cout << std::hex << std::setfill('0') << std::setw(2) << int(*m_Mem[i*16 + n]) << " ";
                     std::cout << std::endl;
                 }
             }
@@ -175,7 +175,7 @@ void RP2A03::debugConsole(std::string prompt)
                 // find last non zero data
                 for(int i = m_MemSize-1; i >= 0; i--)
                 {
-                    if(m_Mem[i] != 0)
+                    if(*m_Mem[i] != 0)
                     {
                         lastentry = i;
                         break;
@@ -189,7 +189,7 @@ void RP2A03::debugConsole(std::string prompt)
                 {
 
                     // write all memory to file, stopping at last non-zero address
-                    for(unsigned int i = 0; i <= lastentry; i++) ofile.put( (unsigned char)( int(m_Mem[i])) );
+                    for(unsigned int i = 0; i <= lastentry; i++) ofile.put( (unsigned char)( int(*m_Mem[i])) );
                     ofile.close();
                     std::cout << "Wrote " << std::dec << lastentry + 1 << " bytes to " << words[1] << std::endl;
 
@@ -219,7 +219,7 @@ void RP2A03::debugConsole(std::string prompt)
                         uint8_t data = uint8_t(ifile.get());
                         if(!ifile.eof())
                         {
-                            m_Mem[loffset + bytes] = data;
+                            *m_Mem[loffset + bytes] = data;
                             bytes++;
                         }
                     }
