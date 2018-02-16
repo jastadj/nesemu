@@ -72,6 +72,7 @@ void C6502::debugConsole(std::string prompt)
             std::cout << "Register Y       = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegY) << std::endl;
             std::cout << "Stack Pointer    = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegSP) << std::endl;
             std::cout << "Program Counter  = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegPC) << std::endl;
+            std::cout << "Instruction at PC= 0x" << std::hex << std::setfill('0') << std::setw(2) << int(*m_Mem[m_RegPC]) << std::endl;
             std::cout << "Flags:" << std::endl;
             std::cout << "  Carry            = " << getFlag(FLAG_CARRY) << std::endl;
             std::cout << "  Zero             = " << getFlag(FLAG_ZERO) << std::endl;

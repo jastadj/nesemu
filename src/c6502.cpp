@@ -573,7 +573,7 @@ bool C6502::execute(uint8_t opcode)
     case 0x95:
         STA(ZERO_PAGE_X);
         break;
-    case 0x80:
+    case 0x8D:
         STA(ABSOLUTE);
         break;
     case 0x9D:

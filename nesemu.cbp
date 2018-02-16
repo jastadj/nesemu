@@ -30,22 +30,23 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add directory="include" />
 		</Compiler>
-		<Unit filename="c2c02.cpp" />
-		<Unit filename="c2c02.hpp" />
-		<Unit filename="c6502.cpp" />
-		<Unit filename="c6502.hpp" />
-		<Unit filename="c6502_debug.cpp" />
-		<Unit filename="c6502_ops.cpp" />
-		<Unit filename="cartridge.cpp" />
-		<Unit filename="cartridge.hpp" />
-		<Unit filename="main.cpp" />
-		<Unit filename="memorymap.cpp" />
-		<Unit filename="memorymap.hpp" />
-		<Unit filename="nes.cpp" />
-		<Unit filename="nes.hpp" />
-		<Unit filename="rp2a03.cpp" />
-		<Unit filename="rp2a03.hpp" />
+		<Unit filename="include/c2c02.hpp" />
+		<Unit filename="include/c6502.hpp" />
+		<Unit filename="include/cartridge.hpp" />
+		<Unit filename="include/memorymap.hpp" />
+		<Unit filename="include/nes.hpp" />
+		<Unit filename="include/rp2a03.hpp" />
+		<Unit filename="src/c2c02.cpp" />
+		<Unit filename="src/c6502.cpp" />
+		<Unit filename="src/c6502_debug.cpp" />
+		<Unit filename="src/c6502_ops.cpp" />
+		<Unit filename="src/cartridge.cpp" />
+		<Unit filename="src/main.cpp" />
+		<Unit filename="src/memorymap.cpp" />
+		<Unit filename="src/nes.cpp" />
+		<Unit filename="src/rp2a03.cpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />
