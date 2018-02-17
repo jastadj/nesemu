@@ -9,6 +9,7 @@ private:
 
 public:
     RP2A03(uint8_t **memory, unsigned int memory_size);
+    ~RP2A03();
 
     void debugConsole(std::string prompt);
 };

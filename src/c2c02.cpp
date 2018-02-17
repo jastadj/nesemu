@@ -11,6 +11,18 @@ C2C02::C2C02(uint8_t **memory, unsigned int memory_size)
     m_MemSize = memory_size;
     m_Mem = memory;
 
+    // these need to be mapped with CPU memory
+    // use mapRegisters(CPU MEMORY) to map registers
+    m_PPUCTRL = NULL;
+    m_PPUMASK = NULL;
+    m_PPUSTATUS = NULL;
+    m_OAMADDR = NULL;
+    m_OAMDATA = NULL;
+    m_PPUSCROLL = NULL;
+    m_PPUADDR = NULL;
+    m_PPUDATA = NULL;
+    m_OAMDMA = NULL;
+
     init();
 }
 
@@ -21,12 +33,40 @@ C2C02::~C2C02()
 
 bool C2C02::init()
 {
-
-
     return true;
 }
+
+void C2C02::mapRegisters(uint8_t **cpumem)
+{
+    std::cout << "PPU registers exposed to CPU memory." << std::endl;
+    m_PPUCTRL = cpumem[PPUCTRL];
+    m_PPUMASK = cpumem[PPUMASK];
+    m_PPUSTATUS = cpumem[PPUSTATUS];
+    m_OAMADDR = cpumem[OAMADDR];
+    m_OAMDATA = cpumem[OAMDATA];
+    m_PPUSCROLL = cpumem[PPUSCROLL];
+    m_PPUADDR = cpumem[PPUADDR];
+    m_PPUDATA = cpumem[PPUDATA];
+    m_OAMDMA = cpumem[OAMDMA];
+}
+
 //////////////////////////////////
 // DEBUG
+
+void C2C02::show()
+{
+    std::cout << "PPU Registers:" << std::endl;
+    std::cout << "PPUCTRL   = " << std::hex << std::setfill('0') << std::setw(2) << int(*m_PPUCTRL) << std::endl;
+    std::cout << "PPUMASK   = " << std::hex << std::setfill('0') << std::setw(2) << int(*m_PPUMASK) << std::endl;
+    std::cout << "PPUSTATUS = " << std::hex << std::setfill('0') << std::setw(2) << int(*m_PPUSTATUS) << std::endl;
+    std::cout << "OAMADDR   = " << std::hex << std::setfill('0') << std::setw(2) << int(*m_OAMADDR) << std::endl;
+    std::cout << "OAMDATA   = " << std::hex << std::setfill('0') << std::setw(2) << int(*m_OAMDATA) << std::endl;
+    std::cout << "PPUSCROLL = " << std::hex << std::setfill('0') << std::setw(2) << int(*m_PPUSCROLL) << std::endl;
+    std::cout << "PPUADDR   = " << std::hex << std::setfill('0') << std::setw(2) << int(*m_PPUADDR) << std::endl;
+    std::cout << "PPUDATA   = " << std::hex << std::setfill('0') << std::setw(2) << int(*m_PPUDATA) << std::endl;
+    std::cout << "OAMDMA    = " << std::hex << std::setfill('0') << std::setw(2) << int(*m_OAMDMA) << std::endl;
+}
+
 void C2C02::debugConsole(std::string prompt)
 {
     bool quit = false;
@@ -73,7 +113,7 @@ void C2C02::debugConsole(std::string prompt)
         }
         else if(words[0] == "show")
         {
-            std::cout << "not implemented yet.." << std::endl;
+            show();
         }
         else if(words[0] == "w" || words[0] == "r")
         {

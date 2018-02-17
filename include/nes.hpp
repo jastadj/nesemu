@@ -17,6 +17,8 @@ class NES
 {
 private:
 
+    bool init();
+
     // memory
     MemoryMap *m_MemCPU;
     MemoryMap *m_MemPPU;
@@ -33,8 +35,10 @@ private:
 
 public:
     NES();
+    ~NES();
 
     bool loadCartridge(std::string romfile);
+    void reset();
 
     void debugConsole(std::string prompt);
 };

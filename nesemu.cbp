@@ -41,6 +41,7 @@
 		<Unit filename="src/c2c02.cpp" />
 		<Unit filename="src/c6502.cpp" />
 		<Unit filename="src/c6502_debug.cpp" />
+		<Unit filename="src/c6502_illegalops.cpp" />
 		<Unit filename="src/c6502_ops.cpp" />
 		<Unit filename="src/cartridge.cpp" />
 		<Unit filename="src/main.cpp" />

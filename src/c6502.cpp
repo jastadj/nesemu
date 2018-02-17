@@ -10,10 +10,15 @@ C6502::C6502(uint8_t **memory, unsigned int memory_size)
     m_MemSize = memory_size;
     m_Mem = memory;
 
-    init();
+    reset();
 }
 
-bool C6502::init()
+C6502::~C6502()
+{
+
+}
+
+bool C6502::reset()
 {
     // clear registers
     m_RegA = 0x0;
@@ -23,10 +28,9 @@ bool C6502::init()
     // reset cycles, program counter and clear stack pointer,
     m_Cycles = 0;
     m_RegPC = 0x0;
-    m_RegSP = 0x0;
 
     // clear stack
-    m_Stack.clear();
+    m_RegSP = 0xff;
 
     // clear the status register
     m_RegStat = 0x0 | (0x1 << FLAG_NOT_USED); // bit 5 (not used) is always high
@@ -44,20 +48,19 @@ void C6502::printError(std::string errormsg)
 
 void C6502::pushStack(uint8_t val)
 {
-    m_Stack.push_back(val);
+    *m_Mem[STACK_END + m_RegSP] = val;
+    m_RegSP--;
 }
 
 uint8_t C6502::popStack()
 {
-    if(m_Stack.empty())
-    {
-        std::cout << "Error popping stack, stack is empty!  Returning 0x0." << std::endl;
-        return 0x0;
-    }
+    m_RegSP++;
+    return *m_Mem[STACK_END + m_RegSP];
+}
 
-    uint8_t val = m_Stack.back();
-    m_Stack.pop_back();
-    return val;
+bool C6502::executeNextInstruction()
+{
+    return execute( *m_Mem[m_RegPC] );
 }
 
 bool C6502::execute(uint8_t opcode)
@@ -137,6 +140,11 @@ bool C6502::execute(uint8_t opcode)
     // BCC - branch on carry clear (c==0)
     case 0x90:
         BCC(RELATIVE);
+        break;
+
+    // BEQ - branch on result 0
+    case 0xf0:
+        BEQ(RELATIVE);
         break;
 
     // BCS - branch on carry set (c == 1)
@@ -748,4 +756,29 @@ uint8_t *C6502::getAddress(ADDRESS_MODE amode)
     }
 
     return NULL;
+}
+
+void C6502::show()
+{
+    std::cout << "C6502" << std::endl;
+    std::cout << "-----" << std::endl;
+    std::cout << "Cycles           = " << std::dec << m_Cycles << std::endl;
+    std::cout << "Accumulator      = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegA) << std::endl;
+    std::cout << "Register X       = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegX) << std::endl;
+    std::cout << "Register Y       = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegY) << std::endl;
+    std::cout << "Stack Pointer    = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegSP) << std::endl;
+    if(m_RegSP < 0xff)
+        for(int i = int(m_RegSP+1); i <= 0xff; i++)
+            std::cout << "     " << std::hex << std::setfill('0') << std::setw(2) << int(STACK_END + i) << std::endl;
+    std::cout << "Program Counter  = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegPC) << std::endl;
+    std::cout << "Instruction at PC= 0x" << std::hex << std::setfill('0') << std::setw(2) << int(*m_Mem[m_RegPC]) << std::endl;
+    std::cout << "Flags:" << std::endl;
+    std::cout << "  Carry            = " << getFlag(FLAG_CARRY) << std::endl;
+    std::cout << "  Zero             = " << getFlag(FLAG_ZERO) << std::endl;
+    std::cout << "  Interrupt Enable = " << getFlag(FLAG_INTERRUPT_DISABLE) << std::endl;
+    std::cout << "  Decimal Mode     = " << getFlag(FLAG_DECIMAL_MODE) << std::endl;
+    std::cout << "  SW Interrupt     = " << getFlag(FLAG_SOFTWARE_INTERRUPT) << std::endl;
+    std::cout << "  NOT USED         = " << getFlag(FLAG_NOT_USED) << std::endl;
+    std::cout << "  Overflow         = " << getFlag(FLAG_OVERFLOW) << std::endl;
+    std::cout << "  Sign             = " << getFlag(FLAG_SIGN) << std::endl;
 }

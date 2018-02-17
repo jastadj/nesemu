@@ -44,6 +44,7 @@ void C6502::debugConsole(std::string prompt)
             std::cout << "help - show this menu" << std::endl;
             std::cout << "show - show relevant CPU information" << std::endl;
             std::cout << "step - step next instruction" << std::endl;
+            std::cout << "stepshow - step and show" << std::endl;
             std::cout << "r <addr> [count] - read value at memory address and optional additional bytes" << std::endl;
             std::cout << "w <addr> <byte> - write byte to memory address" << std::endl;
             std::cout << "reset - clear registers, stack pointer, p counter" << std::endl;
@@ -62,28 +63,7 @@ void C6502::debugConsole(std::string prompt)
             std::cout << "setoverflow <0|1> - set flag" << std::endl;
             std::cout << "setsign <0|1> - set flag" << std::endl;
         }
-        else if(words[0] == "show")
-        {
-            std::cout << "C6502" << std::endl;
-            std::cout << "-----" << std::endl;
-            std::cout << "Cycles           = " << std::dec << m_Cycles << std::endl;
-            std::cout << "Accumulator      = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegA) << std::endl;
-            std::cout << "Register X       = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegX) << std::endl;
-            std::cout << "Register Y       = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegY) << std::endl;
-            std::cout << "Stack Pointer    = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegSP) << std::endl;
-            std::cout << "Program Counter  = 0x" << std::hex << std::setfill('0') << std::setw(2) << int(m_RegPC) << std::endl;
-            std::cout << "Instruction at PC= 0x" << std::hex << std::setfill('0') << std::setw(2) << int(*m_Mem[m_RegPC]) << std::endl;
-            std::cout << "Flags:" << std::endl;
-            std::cout << "  Carry            = " << getFlag(FLAG_CARRY) << std::endl;
-            std::cout << "  Zero             = " << getFlag(FLAG_ZERO) << std::endl;
-            std::cout << "  Interrupt Enable = " << getFlag(FLAG_INTERRUPT_DISABLE) << std::endl;
-            std::cout << "  Decimal Mode     = " << getFlag(FLAG_DECIMAL_MODE) << std::endl;
-            std::cout << "  SW Interrupt     = " << getFlag(FLAG_SOFTWARE_INTERRUPT) << std::endl;
-            std::cout << "  NOT USED         = " << getFlag(FLAG_NOT_USED) << std::endl;
-            std::cout << "  Overflow         = " << getFlag(FLAG_OVERFLOW) << std::endl;
-            std::cout << "  Sign             = " << getFlag(FLAG_SIGN) << std::endl;
-
-        }
+        else if(words[0] == "show") show();
         else if(words[0] == "w" || words[0] == "r")
         {
             uint16_t addr;
@@ -136,15 +116,24 @@ void C6502::debugConsole(std::string prompt)
         else if(words[0] == "step")
         {
             std::cout << "Executing opcode : " << std::hex << int(*m_Mem[m_RegPC]) << std::endl;
-            if(!execute(*m_Mem[m_RegPC]))
+            if(!executeNextInstruction() )
             {
                 std::cout << "Opcode undefined : " << std::hex << int(*m_Mem[m_RegPC]) << std::endl;
             }
         }
+        else if(words[0] == "stepshow")
+        {
+            std::cout << "Executing opcode : " << std::hex << int(*m_Mem[m_RegPC]) << std::endl;
+            if(!execute(*m_Mem[m_RegPC]))
+            {
+                std::cout << "Opcode undefined : " << std::hex << int(*m_Mem[m_RegPC]) << std::endl;
+            }
+            show();
+        }
         else if(words[0] == "reset")
         {
             std::cout << "Resetting C6502..." << std::endl;
-            init();
+            reset();
         }
         else if(words[0] == "clearmem")
         {

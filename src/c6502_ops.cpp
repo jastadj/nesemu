@@ -1069,6 +1069,9 @@ void C6502::LDA(ADDRESS_MODE amode)
     }
 
     m_RegA = *addr;
+
+    setFlag(FLAG_SIGN, m_RegA & 0x80);
+    setFlag(FLAG_ZERO, m_RegA == 0x0);
 }
 
 // load register x with memory, regx = m
@@ -1111,6 +1114,9 @@ void C6502::LDX(ADDRESS_MODE amode)
     }
 
     m_RegX = *addr;
+
+    setFlag(FLAG_SIGN, m_RegX & 0x80);
+    setFlag(FLAG_ZERO, m_RegX == 0x0);
 }
 
 // load register y with memory, regy = m
@@ -1153,6 +1159,9 @@ void C6502::LDY(ADDRESS_MODE amode)
     }
 
     m_RegY = *addr;
+
+    setFlag(FLAG_SIGN, m_RegY & 0x80);
+    setFlag(FLAG_ZERO, m_RegY == 0x0);
 }
 
 // LSR - shift right one bit (memory or accumulator)
@@ -1834,17 +1843,11 @@ void C6502::TSX(ADDRESS_MODE amode)
             break;
     }
 
-    if(!m_Stack.empty())
-    {
-        m_RegX = m_Stack.back();
 
-        setFlag(FLAG_SIGN, m_RegX & 0x80);
-        setFlag(FLAG_ZERO, m_RegX == 0x0);
-    }
-    else
-    {
-        std::cout << "TSX : Warning, there is nothing on the stack to transfer!" << std::endl;
-    }
+    m_RegX = m_RegSP;
+
+    setFlag(FLAG_SIGN, m_RegX & 0x80);
+    setFlag(FLAG_ZERO, m_RegX == 0x0);
 }
 
 // TXA- transfer reg x to accumulator
@@ -1893,10 +1896,7 @@ void C6502::TXS(ADDRESS_MODE amode)
             break;
     }
 
-    if(!m_Stack.empty())
-    {
-        m_Stack.back() = m_RegX;
-    }
+    m_RegSP = m_RegX;
 }
 
 // TYA- transfer reg y to accumulator

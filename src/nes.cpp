@@ -8,15 +8,6 @@ NES::NES()
     m_MemCPU = new MemoryMap(MEM_SIZE);
     std::cout << "Allocated " << MEM_SIZE << " bytes of memory.\n";
 
-    // configure cpu memory mirroring
-    m_MemCPU->mirror(0x0000, 0x07ff, 0x0800, 0x0fff);
-    m_MemCPU->mirror(0x0000, 0x07ff, 0x1000, 0x17ff);
-    m_MemCPU->mirror(0x0000, 0x07ff, 0x1800, 0x1fff);
-    // ppu i/o register mirroring (in cpu)
-    for(unsigned int i = 0x2008; i <= 0x3fff; i += 8) m_MemCPU->mirror(0x2000, 0x2007, i, i+7);
-
-
-
     // init PPU memory
     m_MemPPU = new MemoryMap(PPUMEM_SIZE);
     std::cout << "Allocated " << PPUMEM_SIZE << " bytes of PPU memory.\n";
@@ -29,6 +20,57 @@ NES::NES()
 
     // init PPU
     m_PPU = new C2C02(m_MemPPU->getMap(), PPUMEM_SIZE);
+
+    reset();
+}
+
+NES::~NES()
+{
+    if(m_Cartridge) delete m_Cartridge;
+    delete m_MemCPU;
+    delete m_MemPPU;
+    delete m_CPU;
+    delete m_PPU;
+}
+
+bool NES::init()
+{
+
+    // clear memory and mirrors
+    m_MemCPU->clear();
+    m_MemCPU->clearMirror(0x0000, MEM_SIZE-1);
+    m_MemPPU->clear();
+    m_MemPPU->clearMirror(0x0000, PPUMEM_SIZE-1);
+
+    // expose PPU registers to CPU
+    m_PPU->mapRegisters(m_MemCPU->getMap());
+
+    // configure cpu memory mirroring
+    m_MemCPU->mirror(0x0000, 0x07ff, 0x0800, 0x0fff);
+    m_MemCPU->mirror(0x0000, 0x07ff, 0x1000, 0x17ff);
+    m_MemCPU->mirror(0x0000, 0x07ff, 0x1800, 0x1fff);
+
+    // ppu i/o register mirroring (in cpu)
+    for(unsigned int i = 0x2008; i <= 0x3fff; i += 8) m_MemCPU->mirror(0x2000, 0x2007, i, i+7);
+
+    // reset processor
+    if(!m_CPU->reset()) return false;
+
+    return true;
+}
+
+void NES::reset()
+{
+    if(!m_Cartridge) init();
+    else
+    {
+        m_MemCPU->write(0x00, 0x6c);
+        m_MemCPU->write(0x01, 0xfc);
+        m_MemCPU->write(0x02, 0xff);
+
+        m_CPU->reset();
+
+    }
 }
 
 bool NES::loadCartridge(std::string romfile)
@@ -73,6 +115,7 @@ bool NES::loadCartridge(std::string romfile)
 
 
         std::cout << "Successfully loaded ROM : " << romfile << std::endl;
+        reset();
         return true;
     }
     else
@@ -125,6 +168,7 @@ void NES::debugConsole(std::string prompt)
             std::cout << "quit - exit console" << std::endl;
             std::cout << "help - show this menu" << std::endl;
             std::cout << "show - show relevant NES information" << std::endl;
+            std::cout << "reset - reset NES" << std::endl;
             std::cout << "cpu - enter CPU debug console" << std::endl;
             std::cout << "ppu - enter PPU debug console" << std::endl;
             std::cout << "showrom - show rom/cartridge information" << std::endl;
@@ -134,6 +178,11 @@ void NES::debugConsole(std::string prompt)
         else if(words[0] == "show")
         {
             std::cout << "not implemented yet.." << std::endl;
+        }
+        else if(words[0] == "reset")
+        {
+            std::cout << "Resetting NES..." << std::endl;
+            reset();
         }
         else if(words[0] == "cpu")
         {

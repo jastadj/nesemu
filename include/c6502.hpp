@@ -5,6 +5,8 @@
 #include <iostream>
 #include <vector>
 
+#define STACK_END 0x0100
+
     // b7 = S - Sign flag, 1 = negative
     // b6 = V - overflow flag
     // b5 = not used, should always be logical 1
@@ -48,10 +50,9 @@ protected:
     uint8_t m_RegX;
     uint8_t m_RegY;
 
-    uint8_t m_RegSP; // stack pointer (first empty place on the stack)
+    uint8_t m_RegSP; // stack pointer
     uint16_t m_RegPC; // program counter, position of current instruction
 
-    std::vector<uint8_t> m_Stack;
     void pushStack(uint8_t val);
     uint8_t popStack();
 
@@ -69,9 +70,6 @@ protected:
     // b2 = I - interrupt enable/disable, if set, interrupts are disabled
     // b1 = Z - Zero flag, set when arithmetic or logical op produces 0
     // b0 = C - carry flag
-
-    //
-    bool init();
 
     bool execute(uint8_t opcode);
 
@@ -143,9 +141,21 @@ protected:
 
 public:
     C6502(uint8_t **memory, unsigned int memory_size);
+    virtual ~C6502();
+
+    //uint16_t getProgramCounter() { return m_RegPC;}
+    //void setProgramCounter(uint16_t newpc) { m_RegPC = newpc;}
+
+    //uint8_t getStackPointer() { return m_RegSP;}
+    //void setStackPointer(uint8_t newsp) { m_RegSP = newsp;}
+
+    // reset CPU
+    bool reset();
+
+    // execute
+    bool executeNextInstruction();
 
     virtual void debugConsole(std::string prompt);
-
-
+    void show();
 };
 #endif // CLASS_C6502
