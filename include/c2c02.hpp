@@ -44,6 +44,7 @@ public:
 
     // map PPU registers to CPU memory
     void mapRegisters(uint8_t **cpumem);
+    void reset();
 
     // debug
     void debugConsole(std::string prompt);

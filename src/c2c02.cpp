@@ -36,6 +36,15 @@ bool C2C02::init()
     return true;
 }
 
+void C2C02::reset()
+{
+    *m_PPUCTRL = 0x0;
+    *m_PPUMASK = 0x0;
+    *m_PPUSTATUS = 0x0;
+    //*m_OAMADDR = 0x0;
+
+}
+
 void C2C02::mapRegisters(uint8_t **cpumem)
 {
     std::cout << "PPU registers exposed to CPU memory." << std::endl;
