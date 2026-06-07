@@ -177,7 +177,7 @@ void GLWindow::renderLoop()
     glDeleteProgram(m_ShaderProgram);
 
     glfwTerminate();
-    std::cout << "Goodbye!\n";
+    std::cout << "Window closed, enter 'quit' command in console.\n";
 
     m_State = STATE::CLOSED;
 }

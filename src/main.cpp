@@ -3,6 +3,7 @@
 #include <thread>
 
 #include "console.h"
+#include "cpu6502.h"
 #include "glwindow.h"
 
 int main()
@@ -10,6 +11,9 @@ int main()
     bool quit = false;
     GLWindow window;
     Console console;
+    CPU6502 cpu;
+
+    console.m_CPU = &cpu;
 
     // Start window
     window.start();
