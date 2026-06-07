@@ -10,10 +10,10 @@ int main()
 {
     bool quit = false;
     GLWindow window;
-    Console console;
+    Console* console = Console::getInstance();
     CPU6502 cpu;
 
-    console.m_CPU = &cpu;
+    console->m_CPU = &cpu;
 
     // Start window
     window.start();
@@ -37,7 +37,7 @@ int main()
         }
         else
         {
-            console.parseCommand(buf);
+            console->parseCommand(buf);
         }
     }
     

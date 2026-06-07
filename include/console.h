@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
 
 class CPU6502;
 
@@ -12,14 +13,17 @@ class CPU6502;
 class Console
 {
 public:
-    Console();
-    ~Console();
+    static Console* getInstance();
 
     static CPU6502* m_CPU;
 
     void parseCommand(std::string cmd_str);
 
 private:
+    // Singleton
+    static Console* m_Instance;
+    Console();
+    ~Console();
 
     struct Command
     {
@@ -49,10 +53,19 @@ private:
     bool isCommand(Command* cmd);
     void showMenu(Command* cmd);
 
+    std::ios m_IOSState;
+
     static void doHelp(std::vector<std::string> args);
     static void doQuit(std::vector<std::string> args);
 
-    static void doMemDump(std::vector<std::string> args);
+    static void doJohn(std::vector<std::string> args);
+
+    static void doMemRead(std::vector<std::string> args);
+    static void doMemWrite(std::vector<std::string> args);
+
+    static void doCPUShow(std::vector<std::string> args);
+    static void doCPUExecute(std::vector<std::string> args);
+    static void doCPUPC(std::vector<std::string> args);
 };
 
 #endif
