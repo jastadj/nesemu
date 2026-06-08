@@ -2,6 +2,7 @@
 
 #include <iomanip>
 #include <sstream>
+#include <fstream>
 
 #include "tools.h"
 
@@ -25,10 +26,11 @@ Console::Console():
     m_Commands.emplace_back(Command("mem", "Memory commands"));
     m_Commands.back().sub_commands.emplace_back(Command("read", "Read memory (usage: read <offset> <len>)", doMemRead, 2, 2));
     m_Commands.back().sub_commands.emplace_back(Command("write", "Write memory (usage: write <offset> <b0> <b1> <bn...>)", doMemWrite, 2, -1));
+    m_Commands.back().sub_commands.emplace_back(Command("save", "Save memory to file (usage: save <filepath>)", doMemSave, 1, 1));
     
     m_Commands.emplace_back(Command("cpu", "CPU commands"));
     m_Commands.back().sub_commands.emplace_back(Command("show", "Show CPU info", doCPUShow));
-    m_Commands.back().sub_commands.emplace_back(Command("execute", "Execute instruction at current PC", doCPUExecute));
+    m_Commands.back().sub_commands.emplace_back(Command("execute", "Execute instruction at current PC (usage: execute [count=1])", doCPUExecute, 0, 1));
     m_Commands.back().sub_commands.emplace_back(Command("pc", "Set program counter (usage: pc <offset>)", doCPUPC, 1, 1));
 }
 
@@ -218,9 +220,8 @@ void Console::doQuit(std::vector<std::string> args) {};
 
 void Console::doJohn(std::vector<std::string> args)
 {
-    m_Instance->parseCommand("mem write 0x00 0xa9 0x7f 0x85 0x10");
-    m_Instance->parseCommand("cpu execute");
-    m_Instance->parseCommand("cpu execute");
+    m_Instance->parseCommand("mem write 0x00 0xb6 0x01 0xb4 0x02 0xa9 0x03");
+    m_Instance->parseCommand("cpu execute 3");
     m_Instance->parseCommand("cpu show");
     m_Instance->parseCommand("mem read 0 32");
 }
@@ -312,6 +313,23 @@ void Console::doMemWrite(std::vector<std::string> args)
     }
 }
 
+void Console::doMemSave(std::vector<std::string> args)
+{
+    std::string filename = args[0];
+    std::ofstream file(filename, std::ios::out | std::ios::binary);
+    if (file.is_open())
+    {
+        file.write((const char*)m_CPU->m_Memory, m_CPU->getMemorySize());
+        file.flush();
+        file.close();
+        std::cout << "Wrote " << m_CPU->getMemorySize() << " bytes to " << filename << std::endl;
+    }
+    else
+    {
+        std::cout << "Error saving memory to " << filename << std::endl;
+    }
+}
+
 
 ///////////////
 // CPU COMMANDS
@@ -333,13 +351,23 @@ void Console::doCPUShow(std::vector<std::string> args)
 
 void Console::doCPUExecute(std::vector<std::string> args)
 {
-    std::cout << "Executing CPU Instruction 0x" << std::hex << std::setw(2) << std::setfill('0') << int(m_CPU->m_Memory[m_CPU->m_PC]);
-    std::cout << " @ 0x" << std::hex << std::setw(4) << std::setfill('0') << m_CPU->m_PC << std::endl;
-    uint8_t opcode = m_CPU->m_Memory[m_CPU->m_PC];
-    bool result = m_CPU->execute();
-    if (!result)
+    unsigned int count = 1;
+    if (!args.empty())
     {
-        std::cout << "Error executing opcode 0x" << std::hex << std::setw(2) << std::setfill('0') << int(opcode) << std::endl;
+        count = (unsigned int)Tools::toInt(args[0]);
+    }
+
+    for (auto i = 0; i < count; i++)
+    {
+        std::cout << "Executing CPU Instruction 0x" << std::hex << std::setw(2) << std::setfill('0') << int(m_CPU->m_Memory[m_CPU->m_PC]);
+        std::cout << " @ 0x" << std::hex << std::setw(4) << std::setfill('0') << m_CPU->m_PC << std::endl;
+        uint8_t opcode = m_CPU->m_Memory[m_CPU->m_PC];
+        bool result = m_CPU->execute();
+        if (!result)
+        {
+            std::cout << "Error executing opcode 0x" << std::hex << std::setw(2) << std::setfill('0') << int(opcode) << std::endl;
+            break;
+        }
     }
 }
 

@@ -35,19 +35,41 @@ bool CPU6502::execute()
 {
     uint8_t cycles = 0;
 
-    switch (m_Memory[m_PC])
+    switch (m_Memory[m_PC++])
     {
-    case OPCODES_6502::LDA_IMMEDIATE:
-        m_ACC = m_Memory[m_PC + 1];
-        m_PC += 2;
+        // REGISTER X
+    case OPCODES_6502::LDX_IMMEDIATE:
+        m_RX = getOperand(ADDRESS_MODE::IMMEDIATE);
         cycles = 2;
         break;
+    case OPCODES_6502::STX_ZERO_PAGE:
+        m_Memory[getOperand(ADDRESS_MODE::ZERO_PAGE)] = m_RX;
+        cycles = 3;
+        break;
+        // REGISTER Y
+    case OPCODES_6502::LDY_IMMEDIATE:
+        m_RY = getOperand(ADDRESS_MODE::IMMEDIATE);
+        cycles = 2;
+        break;
+    case OPCODES_6502::STY_ZERO_PAGE:
+        m_Memory[getOperand(ADDRESS_MODE::ZERO_PAGE)] = m_RY;
+        cycles = 3;
+        break;
+        // ACCUMULATOR
+    case OPCODES_6502::LDA_IMMEDIATE:
+        m_ACC = getOperand(ADDRESS_MODE::IMMEDIATE);
+        cycles = 2;
+        break;
+    case OPCODES_6502::LDA_ZERO_PAGE:
+        m_ACC = getOperand(ADDRESS_MODE::ZERO_PAGE);
+        cycles = 3;
+        break;
+    case OPCODES_6502::LDA_ZERO_PAGE_X:
+        m_ACC = getOperand(ADDRESS_MODE::ZERO_PAGE_X);
+        cycles = 4;
+        break;
     case OPCODES_6502::STA_ZERO_PAGE:
-    {
-        uint8_t zaddr = m_Memory[m_PC + 1];
-        m_Memory[zaddr] = m_ACC;
-    }
-        m_PC += 2;
+        m_Memory[getOperand(ADDRESS_MODE::ZERO_PAGE)] = m_ACC;
         cycles = 3;
         break;
     default:
@@ -55,4 +77,23 @@ bool CPU6502::execute()
         break;
     }
     return true;
+}
+
+uint16_t CPU6502::getOperand(ADDRESS_MODE address_mode)
+{
+    switch (address_mode)
+    {
+    case ADDRESS_MODE::IMMEDIATE:
+        return m_Memory[m_PC++];
+        break;
+    case ADDRESS_MODE::ZERO_PAGE:
+        return m_Memory[m_PC++];
+        break;
+    case ADDRESS_MODE::ZERO_PAGE_X:
+        return m_Memory[m_PC++] + m_RX;
+    default:
+        std::cout << "Error getting address, unhandled mode: " << address_mode << std::endl;
+        break;
+    }
+    return 0;
 }

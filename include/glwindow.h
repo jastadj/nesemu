@@ -26,7 +26,9 @@ private:
     void initShaders();
     void initVertexObjects();
 
+    // Callbacks
     static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
+    static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 
     // Window
     GLFWwindow* m_Window;

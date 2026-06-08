@@ -62,7 +62,9 @@ bool GLWindow::init()
     }
 
     glfwMakeContextCurrent(m_Window);
-    glfwSetFramebufferSizeCallback(m_Window, GLWindow::framebufferSizeCallback);
+
+    glfwSetFramebufferSizeCallback(m_Window, framebufferSizeCallback);
+    glfwSetMouseButtonCallback(m_Window, mouseButtonCallback);
 
     // Initialize GLAD
     if (!gladLoadGL()) {
@@ -139,6 +141,12 @@ void GLWindow::initVertexObjects()
 void GLWindow::framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+}
+
+void GLWindow::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    
+    std::cout << "mouseButtonCallback: button " << button << " action " << action << " mods " << mods << std::endl;
 }
 
 void GLWindow::renderLoop()

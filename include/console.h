@@ -62,6 +62,7 @@ private:
 
     static void doMemRead(std::vector<std::string> args);
     static void doMemWrite(std::vector<std::string> args);
+    static void doMemSave(std::vector<std::string> args);
 
     static void doCPUShow(std::vector<std::string> args);
     static void doCPUExecute(std::vector<std::string> args);

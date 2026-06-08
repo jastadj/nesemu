@@ -3,7 +3,18 @@
 
 enum OPCODES_6502
 {
+    // REGISTER Y
+    LDY_IMMEDIATE = 0xb4,
+    STY_ZERO_PAGE = 0x84,
+
+    // REGISTER X
+    LDX_IMMEDIATE = 0xb6,
+    STX_ZERO_PAGE = 0x86,
+
+    // ACCUMULATOR
     LDA_IMMEDIATE = 0xa9,
+    LDA_ZERO_PAGE = 0xa5,
+    LDA_ZERO_PAGE_X = 0xb5,
     STA_ZERO_PAGE = 0x85
 };
 
