@@ -11,8 +11,12 @@ namespace Tools
     std::string toLower(std::string str);
     std::string toUpper(std::string str);
     
+    // Data Types
     int toInt(std::string tstr);
     unsigned long long toUnsignedLongLong(std::string str);
+
+    // File Tools
+    bool fileExists(const char* filepath);
 }
 
 #endif

@@ -3,12 +3,37 @@
 // debug
 #include <iostream>
 
+#include "tools.h"
+#include "glfont.h"
+
+////////////////////////////////////////////////////////////////////
+
+// Vertex Shader
+const char* vertex_test = R"(
+#version 330 core
+layout (location = 0) in vec3 aPos;
+void main() {
+    gl_Position = vec4(aPos, 1.0);
+}
+)";
+
+// Fragment Shader
+const char* frag_test = R"(
+#version 330 core
+out vec4 FragColor;
+void main() {
+    FragColor = vec4(0.0f, 0.8f, 1.0f, 1.0f); // Cyan triangle
+}
+)";
+////////////////////////////////////////////////////////////////////
+
 GLWindow::GLWindow():
     m_ShaderProgram(0),
     m_VAO(0),
     m_VBO(0),
     m_Window(nullptr),
-    m_State(STATE::NONE)
+    m_State(STATE::NONE),
+    m_GLFont(nullptr)
 {
 
 }
@@ -19,7 +44,8 @@ GLWindow::~GLWindow()
     {
         m_RenderThread.join();
     }
-    
+
+    delete m_GLFont;
 }
 
 bool GLWindow::start()
@@ -41,6 +67,7 @@ void GLWindow::closeWindow()
 
 bool GLWindow::init()
 {
+    int err = 0;
     std::cout << "Initializing window..." << std::endl;
 
     // Initialize GLFW
@@ -67,54 +94,44 @@ bool GLWindow::init()
     glfwSetMouseButtonCallback(m_Window, mouseButtonCallback);
 
     // Initialize GLAD
-    if (!gladLoadGL()) {
-        std::cerr << "Failed to initialize GLAD" << std::endl;
+    err = gladLoadGL();
+    if (err == 0) {
+        std::cerr << "Failed to initialize GLAD: error " << err << std::endl;
         glfwTerminate();
+        return false;
+    }
+
+    // Initialize FreeType
+    err = FT_Init_FreeType(&m_Freetype);
+    if (err)
+    {
+        std::cerr << "Failed to initialize FreeType: error " << err << std::endl;
+        return false;
+    }
+    // Create Text Renderer
+    m_GLFont = new GLFont();
+    if (!m_GLFont->init(m_Freetype, "resources/fonts/courier_prime/CourierPrimeCode.ttf"))
+    {
+        delete m_GLFont;
+        m_GLFont = nullptr;
         return false;
     }
 
     return true;
 }
 
-void GLWindow::initShaders()
+bool GLWindow::initShaders()
 {
-    // Vertex Shader
-    const char* vertexShaderSource = R"(
-#version 330 core
-layout (location = 0) in vec3 aPos;
-void main() {
-    gl_Position = vec4(aPos, 1.0);
-}
-)";
-
-    // Fragment Shader
-    const char* fragmentShaderSource = R"(
-#version 330 core
-out vec4 FragColor;
-void main() {
-    FragColor = vec4(0.0f, 0.8f, 1.0f, 1.0f); // Cyan triangle
-}
-)";
-
-    // Compile shaders
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
-    glCompileShader(vertexShader);
-
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
-    glCompileShader(fragmentShader);
-
-    m_ShaderProgram = glCreateProgram();
-    glAttachShader(m_ShaderProgram, vertexShader);
-    glAttachShader(m_ShaderProgram, fragmentShader);
-    glLinkProgram(m_ShaderProgram);
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    m_ShaderProgram = GLTools::createShaderProgram(vertex_test, frag_test);
+    if (m_ShaderProgram == 0)
+    {
+        std::cout << "Error creating test shader program." << std::endl;
+        return false;
+    }
+    return true;
 }
 
-void GLWindow::initVertexObjects()
+bool GLWindow::initVertexObjects()
 {
     // Triangle vertices
     float vertices[] = {
@@ -123,7 +140,6 @@ void GLWindow::initVertexObjects()
          0.0f,  0.5f, 0.0f
     };
 
-    
     glGenVertexArrays(1, &m_VAO);
     glGenBuffers(1, &m_VBO);
 
@@ -136,6 +152,8 @@ void GLWindow::initVertexObjects()
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+
+    return true;
 }
 
 void GLWindow::framebufferSizeCallback(GLFWwindow* window, int width, int height)
@@ -145,7 +163,6 @@ void GLWindow::framebufferSizeCallback(GLFWwindow* window, int width, int height
 
 void GLWindow::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-    
     std::cout << "mouseButtonCallback: button " << button << " action " << action << " mods " << mods << std::endl;
 }
 
@@ -159,6 +176,9 @@ void GLWindow::renderLoop()
     initShaders();
     initVertexObjects();
     m_State = STATE::RUNNING;
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Render loop
     while (!glfwWindowShouldClose(m_Window))
@@ -175,17 +195,25 @@ void GLWindow::renderLoop()
         glBindVertexArray(m_VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
+        m_GLFont->renderText("TEST", 100.0, 100.0, 1.0, { 1.f, 0.f, 0.f });
+
         glfwSwapBuffers(m_Window);
         glfwPollEvents();
     }
 
     // Cleanup
+
+    // test triangle
     glDeleteVertexArrays(1, &m_VAO);
     glDeleteBuffers(1, &m_VBO);
     glDeleteProgram(m_ShaderProgram);
 
+    FT_Done_FreeType(m_Freetype);
     glfwTerminate();
     std::cout << "Window closed, enter 'quit' command in console.\n";
 
     m_State = STATE::CLOSED;
 }
+
+
+

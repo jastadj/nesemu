@@ -3,9 +3,14 @@
 
 #include <thread>
 #include <mutex>
+#include <map>
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
+#include "gltools.h"
+
+class GLFont;
 
 class GLWindow
 {
@@ -23,8 +28,8 @@ private:
 
     STATE m_State;
     bool init();
-    void initShaders();
-    void initVertexObjects();
+    bool initShaders();
+    bool initVertexObjects();
 
     // Callbacks
     static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
@@ -32,6 +37,9 @@ private:
 
     // Window
     GLFWwindow* m_Window;
+
+    // Freetype
+    FT_Library m_Freetype;
 
     // Render Thread
     std::thread m_RenderThread;
@@ -43,6 +51,9 @@ private:
     // Vertex Objects
     unsigned int m_VAO;
     unsigned int m_VBO;
+
+    // Render Objects
+    GLFont* m_GLFont;
 };
 
 #endif

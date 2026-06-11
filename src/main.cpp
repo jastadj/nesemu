@@ -3,17 +3,19 @@
 #include <thread>
 
 #include "console.h"
-#include "cpu6502.h"
+#include "nes.h"
 #include "glwindow.h"
 
-int main()
+int main(int argc, char* argv[])
 {
     bool quit = false;
     GLWindow window;
     Console* console = Console::getInstance();
-    CPU6502 cpu;
+    NES nes;
 
-    console->m_CPU = &cpu;
+    std::cout << argv[0] << std::endl;
+
+    console->nes = &nes;
 
     // Start window
     window.start();

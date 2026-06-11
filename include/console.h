@@ -5,7 +5,7 @@
 #include <vector>
 #include <iostream>
 
-class CPU6502;
+class NES;
 
 // TODO
 // - Allow non-menu commands to have sub commands
@@ -15,7 +15,7 @@ class Console
 public:
     static Console* getInstance();
 
-    static CPU6502* m_CPU;
+    static NES* nes;
 
     void parseCommand(std::string cmd_str);
 
@@ -63,6 +63,9 @@ private:
     static void doMemRead(std::vector<std::string> args);
     static void doMemWrite(std::vector<std::string> args);
     static void doMemSave(std::vector<std::string> args);
+    static void doMemFill(std::vector<std::string> args);
+    static void doMemFillRand(std::vector<std::string> args);
+
 
     static void doCPUShow(std::vector<std::string> args);
     static void doCPUExecute(std::vector<std::string> args);

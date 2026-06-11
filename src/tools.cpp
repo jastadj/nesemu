@@ -1,6 +1,7 @@
 #include "tools.h"
 
 #include <sstream>
+#include <filesystem>
 
 std::vector<std::string> Tools::split(std::string str, char delimiter, bool allow_empty, bool encapsulate_quotes)
 {
@@ -130,4 +131,9 @@ unsigned long long Tools::toUnsignedLongLong(std::string str)
 		val = strtoull(str.c_str(), &end, 10);
 	}
 	return val;
+}
+
+bool Tools::fileExists(const char* filepath)
+{
+	return std::filesystem::exists(filepath);
 }
