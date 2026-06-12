@@ -15,7 +15,7 @@ class GLFont;
 class GLWindow
 {
 public:
-    enum STATE{NONE, STARTED, RUNNING, CLOSED, ERROR};
+    enum STATE{NONE, STARTED, RUNNING, CLOSE_REQUEST, CLOSED, ERROR};
 
     GLWindow();
     ~GLWindow();
@@ -23,6 +23,7 @@ public:
     bool start();
     bool running();
     void closeWindow();
+    bool shareWith(GLWindow& window);
 
 private:
 
@@ -36,7 +37,9 @@ private:
     static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 
     // Window
+    static bool m_GLFWInitialized;
     GLFWwindow* m_Window;
+    GLFWwindow* m_WindowShare;
 
     // Freetype
     FT_Library m_Freetype;

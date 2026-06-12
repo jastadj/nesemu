@@ -7,6 +7,7 @@
 #include "tools.h"
 
 #include "nes.h"
+#include "asm6502.h"
 
 // Statics
 Console* Console::m_Instance = nullptr;
@@ -20,6 +21,7 @@ Console::Console():
 
     m_Commands.emplace_back(Command("help", "Show help", Console::doHelp, 0, -1));
     m_Commands.emplace_back(Command("quit", "Quit", Console::doQuit));
+    m_Commands.emplace_back(Command("ls", "List files in PWD", Console::doLS));
 
     m_Commands.emplace_back(Command("john", "Run a john test", Console::doJohn, 0, -1));
     
@@ -34,6 +36,11 @@ Console::Console():
     m_Commands.back().sub_commands.emplace_back(Command("show", "Show CPU info", doCPUShow));
     m_Commands.back().sub_commands.emplace_back(Command("execute", "Execute instruction at current PC (usage: execute [count=1])", doCPUExecute, 0, 1));
     m_Commands.back().sub_commands.emplace_back(Command("pc", "Set program counter (usage: pc <offset>)", doCPUPC, 1, 1));
+    m_Commands.back().sub_commands.emplace_back(Command("start", "Start the CPU Clock", doCPUStart, 0, 0));
+    m_Commands.back().sub_commands.emplace_back(Command("stop", "Stop the CPU Clock", doCPUStop, 0, 0));
+
+    m_Commands.emplace_back(Command("asm", "Compile assembly file (usage: asm <input_asm>)", doASM, 1,1));
+
 }
 
 Console::~Console()
@@ -216,7 +223,14 @@ void Console::showMenu(Command* cmd)
 
 // Built-In Dummy Commands
 void Console::doHelp(std::vector<std::string> args) {};
-void Console::doQuit(std::vector<std::string> args) {};
+void Console::doQuit(std::vector<std::string> args) {}
+void Console::doLS(std::vector<std::string> args)
+{
+    for (auto& file : Tools::getFilesAtPath("."))
+    {
+        std::cout << file << std::endl;
+    }
+}
 
 // TEMP JOHN TEST COMMAND
 
@@ -355,6 +369,15 @@ void Console::doMemFillRand(std::vector<std::string> args)
 
 void Console::doCPUShow(std::vector<std::string> args)
 {
+    std::cout << "CPU" << std::endl;
+    std::cout << "===" << std::endl;
+    std::cout << "Clock Speed: " << nes->m_Clock.getClockSpeed() << " Hz";
+    std::cout << std::setprecision(4) << " (" << nes->m_Clock.getClockSpeed() * 1e-6 << " MHz)" << std::endl;
+    std::cout << "Cycle Speed: " << 1e9 / nes->m_Clock.getClockSpeed() << " ns" << std::endl;
+    std::cout << "Process Batches/Sec: " << nes->m_Clock.getBatchesPerSec() << std::endl;
+    std::cout << "Cycles/Batch: " << nes->m_Clock.getCyclesPerBatch() << std::endl;
+    std::cout << "Running: " << Tools::getYesNo(nes->m_Clock.isRunning()) << std::endl;
+    std::cout << "Ticks: " << nes->m_Clock.getTicks() << std::endl;
     std::cout << "Memory Size: " << nes->m_CPU.m_Mem.size() << std::endl;
     std::cout << "Registers" << std::endl;
     std::cout << "---------" << std::endl;
@@ -364,7 +387,7 @@ void Console::doCPUShow(std::vector<std::string> args)
     std::cout << "       X: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getX()) << std::endl;
     std::cout << "       Y: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getY()) << std::endl;
     std::cout << "  Status: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getStatus()) << std::endl;
-
+    
     std::cout << std::dec << std::endl;
 }
 
@@ -395,4 +418,27 @@ void Console::doCPUPC(std::vector<std::string> args)
     uint16_t val = uint16_t(Tools::toInt(args[0]));
     std::cout << "Setting program counter to " << std::hex << std::setw(4) << std::setfill('0') << val << std::endl;
     nes->m_CPU.setPC(val);
+}
+
+void Console::doCPUStart(std::vector<std::string> args)
+{
+    std::cout << "CPU Started: " << Tools::getYesNo(nes->m_Clock.start()) << std::endl;
+}
+
+void Console::doCPUStop(std::vector<std::string> args)
+{
+    std::cout << "CPU Stopped: " << Tools::getYesNo(nes->m_Clock.stop()) << std::endl;
+}
+
+void Console::doASM(std::vector<std::string> args)
+{
+    std::string infile = args[0];
+    std::string outfile = Tools::getFilename(infile);
+    std::string extension = Tools::getFileExtension(infile);
+    outfile.resize(outfile.size() - extension.size());
+    outfile += ".bin";
+
+    std::cout << "Compiling assembly file \"" << infile << "\" to binary \"" << outfile << "\"" << std::endl;
+    bool result = ASM6502::assemble(infile, outfile);
+    std::cout << "Assembly successful = " << result << std::endl;
 }

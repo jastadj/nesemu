@@ -4,7 +4,10 @@
 #include <cstdlib>
 #include <cstdint>
 
+#include "defs6502.h"
+
 #include "memorymap.h"
+
 
 class CPU6502
 {
@@ -41,31 +44,10 @@ private:
     uint8_t m_StackPtr;
     uint8_t m_Status;
 
-    enum ADDRESS_MODE
-    {
-        IMMEDIATE,
-        ZERO_PAGE,
-        ZERO_PAGE_X,
-        ZERO_PAGE_Y,
-        ABSOLUTE,
-        ABSOLUTE_X,
-        ABSOLUTE_Y,
-        INDIRECT_X,
-        INDIRECT_Y
-    };
+
     uint16_t getOperand(ADDRESS_MODE address_mode);
 
-    enum STATUS_BIT
-    {
-        S_CARRY,
-        S_ZERO,
-        S_INTERRUPT,
-        S_DECIMAL,
-        S_BREAK,
-        S_UNUSED,
-        S_OVERFLOW,
-        S_NEGATIVE
-    };
+
     void setStatusBit(STATUS_BIT bit, bool enabled);
 };
 

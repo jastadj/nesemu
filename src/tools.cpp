@@ -98,6 +98,11 @@ std::string Tools::toUpper(std::string str)
 	return str;
 }
 
+std::string Tools::getYesNo(bool y)
+{
+	return (y ? "Yes" : "No");
+}
+
 int Tools::toInt(std::string str)
 {
 	int val = 0;
@@ -133,7 +138,47 @@ unsigned long long Tools::toUnsignedLongLong(std::string str)
 	return val;
 }
 
-bool Tools::fileExists(const char* filepath)
+std::vector<std::string> Tools::getFilesAtPath(std::string path)
+{
+	std::vector<std::string> files;
+	if (std::filesystem::is_directory(path))
+	{
+		std::filesystem::path p(path);
+		std::filesystem::directory_iterator it(p);
+		for (auto& file : it)
+		{
+			if (file.is_regular_file())
+			{
+				files.push_back(file.path().filename().string());
+			}
+		}
+	}
+	return files;
+}
+
+bool Tools::fileExists(std::string filepath)
 {
 	return std::filesystem::exists(filepath);
+}
+
+std::string Tools::getFilename(std::string filepath)
+{
+	std::filesystem::path fp(filepath);
+	return fp.filename().string();
+}
+
+std::string Tools::getFileExtension(std::string filepath)
+{
+	std::filesystem::path fp(filepath);
+	return fp.filename().extension().string();
+}
+
+std::string Tools::getFileDir(std::string filepath)
+{
+	if (std::filesystem::is_regular_file(filepath))
+	{
+		std::filesystem::path p(filepath);
+		return p.parent_path().string();
+	}
+	return "";
 }

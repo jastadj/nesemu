@@ -1,6 +1,7 @@
 #include "nes.h"
 
-NES::NES()
+NES::NES():
+    m_Clock(NES_CLOCK_HZ)
 {
     // Init Memory Map Mirrors
     m_CPU.m_Mem.addMirror(0x0000, 0x0800, 0x0800);
@@ -10,5 +11,6 @@ NES::NES()
 
 NES::~NES()
 {
-
+    // Stop the CPU clock
+    m_Clock.stop();
 }

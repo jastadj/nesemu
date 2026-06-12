@@ -58,18 +58,29 @@ private:
     static void doHelp(std::vector<std::string> args);
     static void doQuit(std::vector<std::string> args);
 
+    // General
+    static void doLS(std::vector<std::string> args);
+
+    // temp debug
     static void doJohn(std::vector<std::string> args);
 
+    // Memory
     static void doMemRead(std::vector<std::string> args);
     static void doMemWrite(std::vector<std::string> args);
     static void doMemSave(std::vector<std::string> args);
     static void doMemFill(std::vector<std::string> args);
     static void doMemFillRand(std::vector<std::string> args);
 
-
+    // CPU
     static void doCPUShow(std::vector<std::string> args);
     static void doCPUExecute(std::vector<std::string> args);
     static void doCPUPC(std::vector<std::string> args);
+    static void doCPUStart(std::vector<std::string> args);
+    static void doCPUStop(std::vector<std::string> args);
+
+
+    // ASM
+    static void doASM(std::vector<std::string> args);
 };
 
 #endif

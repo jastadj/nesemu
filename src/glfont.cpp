@@ -87,7 +87,7 @@ bool GLFont::init(FT_Library& ft, const char* font_file)
     return m_Initialized;
 }
 
-bool GLFont::loadFont(FT_Library& ft, const char* fontPath)
+bool GLFont::loadFont(FT_Library& ft, const char* fontPath, unsigned int pt_size)
 {
     if (m_Initialized)
     {
@@ -100,7 +100,7 @@ bool GLFont::loadFont(FT_Library& ft, const char* fontPath)
         return false;
     }
 
-    FT_Set_Pixel_Sizes(face, 0, 48);  // Set size to load glyphs as
+    FT_Set_Pixel_Sizes(face, 0, pt_size);  // Set size to load glyphs as
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Disable byte-alignment restriction
 

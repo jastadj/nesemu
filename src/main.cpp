@@ -5,6 +5,7 @@
 #include "console.h"
 #include "nes.h"
 #include "glwindow.h"
+#include "tools.h"
 
 int main(int argc, char* argv[])
 {
@@ -13,13 +14,17 @@ int main(int argc, char* argv[])
     Console* console = Console::getInstance();
     NES nes;
 
-    std::cout << argv[0] << std::endl;
-
+    // NES reference for console
     console->nes = &nes;
 
     // Start window
-    window.start();
+    if (!window.start())
+    {
+        std::cerr << "Error starting GL window." << std::endl;
+        return 1;
+    }
 
+    // Console loop
     while (!quit)
     {
         if (!window.running())
@@ -34,6 +39,7 @@ int main(int argc, char* argv[])
 
         if (buf == "quit")
         {
+
             window.closeWindow();
             quit = true;
         }
@@ -42,6 +48,10 @@ int main(int argc, char* argv[])
             console->parseCommand(buf);
         }
     }
+
+    std::cout << "Shutting down GLFW..." << std::endl;
+    glfwTerminate();
+    std::cout << "Done." << std::endl;
     
     return 0;
 }

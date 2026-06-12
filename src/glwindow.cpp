@@ -6,6 +6,9 @@
 #include "tools.h"
 #include "glfont.h"
 
+// STATICS
+bool GLWindow::m_GLFWInitialized = false;
+
 ////////////////////////////////////////////////////////////////////
 
 // Vertex Shader
@@ -32,6 +35,7 @@ GLWindow::GLWindow():
     m_VAO(0),
     m_VBO(0),
     m_Window(nullptr),
+    m_WindowShare(nullptr),
     m_State(STATE::NONE),
     m_GLFont(nullptr)
 {
@@ -44,8 +48,6 @@ GLWindow::~GLWindow()
     {
         m_RenderThread.join();
     }
-
-    delete m_GLFont;
 }
 
 bool GLWindow::start()
@@ -62,7 +64,20 @@ bool GLWindow::running()
 
 void GLWindow::closeWindow()
 {
-    glfwSetWindowShouldClose(m_Window, true);
+    std::cout << "Closing window..." << std::endl;
+    glfwSetWindowShouldClose(m_Window, GLFW_TRUE);
+    m_State = STATE::CLOSE_REQUEST;
+}
+
+bool GLWindow::shareWith(GLWindow& window)
+{
+    if (m_State != STATE::NONE)
+    {
+        std::cerr << "Unable to share this window with another window, already started!" << std::endl;
+        return false;
+    }
+    m_WindowShare = window.m_Window;
+    return true;
 }
 
 bool GLWindow::init()
@@ -71,17 +86,30 @@ bool GLWindow::init()
     std::cout << "Initializing window..." << std::endl;
 
     // Initialize GLFW
-    if (!glfwInit()) {
-        std::cerr << "Failed to initialize GLFW" << std::endl;
-        return false;
+    if (!m_GLFWInitialized)
+    {
+        m_GLFWInitialized = true;
+        if (!glfwInit()) {
+            std::cerr << "Failed to initialize GLFW" << std::endl;
+            return false;
+        }
+
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     }
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
     // Create window
-    m_Window = glfwCreateWindow(800, 600, "NES EMU", nullptr, nullptr);
+    if (m_WindowShare)
+    {
+        std::cout << "Creating shared context window." << std::endl;
+        m_Window = glfwCreateWindow(800, 600, "NES EMU2", nullptr, m_WindowShare);
+    }
+    else
+    {
+        m_Window = glfwCreateWindow(800, 600, "NES EMU", nullptr, nullptr);
+    }
+    
     if (!m_Window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -100,7 +128,7 @@ bool GLWindow::init()
         glfwTerminate();
         return false;
     }
-
+    
     // Initialize FreeType
     err = FT_Init_FreeType(&m_Freetype);
     if (err)
@@ -180,39 +208,42 @@ void GLWindow::renderLoop()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Render loop
-    while (!glfwWindowShouldClose(m_Window))
+    // Render loop - in order to support multiple windows, the render loop needs to:
+    // - check that each window should close
+    // - make window context current, then render that window, then make other window context
+    //   current and render the other window
+    while (!glfwWindowShouldClose(m_Window) && m_State == STATE::RUNNING)
     {
+        glfwPollEvents();
+
+        // Window
+        glfwMakeContextCurrent(m_Window);
         if (glfwGetKey(m_Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         {
             closeWindow();
         }
-
+        // Clear
         glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-
+        // Draw test triangle
         glUseProgram(m_ShaderProgram);
         glBindVertexArray(m_VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
-
-        m_GLFont->renderText("TEST", 100.0, 100.0, 1.0, { 1.f, 0.f, 0.f });
-
+        // Render text
+        m_GLFont->renderText("TEST", 0, 100.0, 1.0, { 1.f, 0.f, 0.f });
         glfwSwapBuffers(m_Window);
-        glfwPollEvents();
     }
 
     // Cleanup
-
-    // test triangle
     glDeleteVertexArrays(1, &m_VAO);
     glDeleteBuffers(1, &m_VBO);
     glDeleteProgram(m_ShaderProgram);
-
+    
+    delete m_GLFont;
     FT_Done_FreeType(m_Freetype);
-    glfwTerminate();
-    std::cout << "Window closed, enter 'quit' command in console.\n";
 
     m_State = STATE::CLOSED;
+    std::cout << "Window closed." << std::endl;
 }
 
 

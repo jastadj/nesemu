@@ -25,7 +25,7 @@ private:
     unsigned int m_VAO, m_VBO;
 
     // Font
-    bool loadFont(FT_Library& ft, const char* fontPath);
+    bool loadFont(FT_Library& ft, const char* fontPath, unsigned int pt_size = 24);
     
     // Character structure
     struct Character {
