@@ -1,0 +1,246 @@
+#include "cpu6502.h"
+
+#include "opcodes6502.h"
+
+// debug
+#include <iostream>
+#include <sstream>
+
+using namespace Arch6502;
+
+CPU::CPU():
+    m_Mem(0xffff)
+{
+    m_CyclesToProcess = 0;
+
+    // Init Registers
+    m_ACC = 0;
+    m_RX = 0;
+    m_RY = 0;
+    m_PC = 0;
+
+    // Stack Pointer
+    // Offset from address 0x0100;
+    m_StackPtr = 0xff; 
+    
+    // Status Register
+    m_Status = 0;
+}
+
+CPU::~CPU()
+{
+}
+
+
+///////////
+// OP-CODES
+
+int CPU::execute()
+{
+    m_CyclesToProcess = 0;
+
+    uint8_t opcode = getAddr(m_PC++);
+
+    switch (opcode)
+    {
+    default:
+        m_CyclesToProcess++;
+        break;
+    }
+    return m_CyclesToProcess;
+}
+
+
+////////////
+// REGISTERS
+
+const uint8_t CPU::getAcc() const
+{
+    return m_ACC;
+}
+
+const uint8_t CPU::getX() const
+{
+    return m_RX;
+}
+
+const uint8_t CPU::getY() const
+{
+    return m_RY;
+}
+
+
+
+const uint8_t CPU::getStackPtr() const
+{
+    return m_StackPtr;
+}
+
+const uint16_t CPU::getPC() const
+{
+    return m_PC;
+}
+
+void CPU::setPC(const uint16_t pc)
+{
+    m_PC = pc;
+}
+
+void CPU::setPCL(const uint8_t pcl)
+{
+    m_PC |= pcl;
+}
+
+void CPU::setPCH(const uint8_t pch)
+{
+    m_PC |= (uint16_t(pch) << 8);
+}
+
+bool CPU::setAddr(uint16_t addr, uint8_t val, bool inc_cycles)
+{
+    if (m_Mem.set(addr, val))
+    {
+        if (inc_cycles)
+        {
+            m_CyclesToProcess++;
+        }
+        return true;
+    }
+    return false;
+}
+
+uint8_t CPU::getAddr(uint16_t addr, bool inc_cycles, bool* ok)
+{
+    bool local_ok = false;
+    uint8_t val = m_Mem.get(addr, &local_ok);
+    if (local_ok && inc_cycles)
+    {
+        m_CyclesToProcess++;
+    }
+    if (ok != nullptr)
+    {
+        *ok = local_ok;
+    }
+    return val;
+}
+
+bool CPU::addMirror(std::size_t source_addr, std::size_t dest_addr, std::size_t len)
+{
+    return m_Mem.addMirror(source_addr, dest_addr, len);
+}
+
+const std::size_t CPU::getMemSize() const
+{
+    return m_Mem.size();
+}
+
+void CPU::fillMem(const uint8_t val)
+{
+    m_Mem.fill(val);
+}
+
+void CPU::fillMemRandom()
+{
+    m_Mem.fillRandom();
+}
+
+const uint8_t CPU::getStatus() const
+{
+    return m_Status;
+}
+
+void CPU::setStatusBit(STATUS_BIT bit, bool enabled)
+{
+    if (enabled)
+    {
+        m_Status |= (0x1 << bit);
+    }
+    else
+    {
+        m_Status = m_Status & ~(0x1 << bit);
+    }
+}
+
+const uint8_t CPU::getStatusBit(STATUS_BIT bit) const
+{
+    if (bit >= 0 && bit < 8)
+    {
+        if ((0x1 << bit) & m_Status)
+        {
+            return 0x01;
+        }
+    }
+    return 0x00;
+}
+
+const char* CPU::getStatusBitString(STATUS_BIT status_bit)
+{
+    switch (status_bit)
+    {
+    case STATUS_BIT::S_CARRY: return "Carry";
+    case STATUS_BIT::S_BREAK: return "Break";
+    case STATUS_BIT::S_DECIMAL: return "Decimal";
+    case STATUS_BIT::S_INTERRUPT: return "Interrupt";
+    case STATUS_BIT::S_NEGATIVE: return "Negative";
+    case STATUS_BIT::S_OVERFLOW: return "Overflow";
+    case STATUS_BIT::S_UNUSED: return "Unused";
+    case STATUS_BIT::S_ZERO: return "Zero";
+    defualt:
+        break;
+    }
+    return "unk";
+}
+
+uint16_t CPU::getOperand(ADDRESS_MODE address_mode)
+{
+    switch (address_mode)
+    {
+    case ADDRESS_MODE::IMMEDIATE:
+        return m_Mem.get(m_PC++);
+    case ADDRESS_MODE::ZERO_PAGE:
+        return m_Mem.get(m_Mem.get(m_PC++));
+    case ADDRESS_MODE::ZERO_PAGE_X:
+        return m_Mem.get(m_PC++) + m_RX;
+    case ADDRESS_MODE::ABSOLUTE:
+    {
+        uint16_t low = m_Mem.get(m_PC++);
+        uint16_t high = m_Mem.get(m_PC++);
+        return m_Mem.get(low | (high << 8));
+    }
+    case ADDRESS_MODE::ABSOLUTE_X:
+    {
+        uint16_t low = m_Mem.get(m_PC++);
+        uint16_t high = m_Mem.get(m_PC++);
+        m_CyclesToProcess += (((low + m_RX) & 0xff00) ? 1 : 0);
+        return m_Mem.get( (low | (high << 8)) + m_RX);
+    }
+    case ADDRESS_MODE::ABSOLUTE_Y:
+    {
+        uint16_t low = m_Mem.get(m_PC++);
+        uint16_t high = m_Mem.get(m_PC++);
+        m_CyclesToProcess += (((low + m_RY) & 0xff00) ? 1 : 0);
+        return m_Mem.get((low | (high << 8)) + m_RY);
+    }
+    case ADDRESS_MODE::INDIRECT_X:
+    {
+        uint8_t zaddr = m_Mem.get(m_PC++) + m_RX;
+        uint16_t low = m_Mem.get(zaddr++);
+        uint16_t high = m_Mem.get(zaddr);
+        return m_Mem.get(low | (high << 8));
+    }
+    case ADDRESS_MODE::INDIRECT_Y:
+    {
+        uint8_t zaddr = m_Mem.get(m_PC++);
+        uint16_t low = m_Mem.get(zaddr++);
+        uint16_t high = m_Mem.get(zaddr);
+        m_CyclesToProcess += (((low + m_RY) && 0xff00) ? 1 : 0);
+        return m_Mem.get( (low | (high << 8)) + m_RY);
+    }
+    default:
+        std::cout << "Error getting address, unhandled mode: " << address_mode << std::endl;
+        break;
+    }
+    return 0;
+}
+
+

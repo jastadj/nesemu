@@ -14,7 +14,7 @@ public:
     NES();
     ~NES();
 
-    CPU6502 m_CPU;
+    Arch6502::CPU m_CPU;
     CPUClock6502 m_Clock;
 };
 

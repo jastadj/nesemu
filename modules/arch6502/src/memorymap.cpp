@@ -21,14 +21,31 @@ const std::size_t MemoryMap::size() const
     return m_Bank.size();
 }
 
-const uint8_t MemoryMap::get(std::size_t addr) const
+const uint8_t MemoryMap::get(std::size_t addr, bool* ok) const
 {
-    return *m_Bank[addr];
+    if (addr < m_Bank.size())
+    {
+        if (ok != nullptr)
+        {
+            *ok = true;
+        }
+        return *m_Bank[addr];
+    }
+    if (ok != nullptr)
+    {
+        *ok = false;
+    }
+    return 0;
 }
 
-void MemoryMap::set(std::size_t addr, const uint8_t val)
+bool MemoryMap::set(std::size_t addr, const uint8_t val)
 {
-    *m_Bank[addr] = val;
+    if (addr < m_Bank.size())
+    {
+        *m_Bank[addr] = val;
+        return true;
+    }
+    return false;
 }
 
 void MemoryMap::fill(const uint8_t val)

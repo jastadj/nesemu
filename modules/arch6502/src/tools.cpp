@@ -3,6 +3,8 @@
 #include <sstream>
 #include <filesystem>
 
+using namespace Arch6502;
+
 std::vector<std::string> Tools::split(std::string str, char delimiter, bool allow_empty, bool encapsulate_quotes)
 {
 	std::vector<std::string> words;
@@ -94,6 +96,17 @@ std::string Tools::toUpper(std::string str)
 	for (auto& c : str)
 	{
 		c = std::toupper(c);
+	}
+	return str;
+}
+
+std::string Tools::removeSpaces(std::string str)
+{
+	std::size_t pos = str.find_first_of(' ');
+	while (pos != std::string::npos)
+	{
+		str = str.erase(pos, 1);
+		pos = str.find_first_of(' ');
 	}
 	return str;
 }

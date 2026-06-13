@@ -13,8 +13,8 @@ public:
 
     const std::size_t size() const;
 
-    const uint8_t get(std::size_t addr) const;
-    void set(std::size_t addr, const uint8_t val);
+    const uint8_t get(std::size_t addr, bool* ok = nullptr) const;
+    bool set(std::size_t addr, const uint8_t val);
 
     void fill(const uint8_t val);
     void fillRandom();

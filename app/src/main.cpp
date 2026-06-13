@@ -1,16 +1,18 @@
 #include <iostream>
 
 #include <thread>
+#include <string>
 
 #include "console.h"
 #include "nes.h"
-#include "glwindow.h"
-#include "tools.h"
+//#include "glwindow.h"
 
 int main(int argc, char* argv[])
 {
     bool quit = false;
+    /*
     GLWindow window;
+    */
     Console* console = Console::getInstance();
     NES nes;
 
@@ -18,19 +20,23 @@ int main(int argc, char* argv[])
     console->nes = &nes;
 
     // Start window
+    /*
     if (!window.start())
     {
         std::cerr << "Error starting GL window." << std::endl;
         return 1;
     }
+    */
 
     // Console loop
     while (!quit)
     {
-        if (!window.running())
+        /*
+        if(!window.running())
         {
             break;
         }
+        */
 
         std::cout << "> ";
 
@@ -39,8 +45,9 @@ int main(int argc, char* argv[])
 
         if (buf == "quit")
         {
-
+            /*
             window.closeWindow();
+            */
             quit = true;
         }
         else
@@ -49,9 +56,11 @@ int main(int argc, char* argv[])
         }
     }
 
+    /*
     std::cout << "Shutting down GLFW..." << std::endl;
     glfwTerminate();
     std::cout << "Done." << std::endl;
+    */
     
     return 0;
 }

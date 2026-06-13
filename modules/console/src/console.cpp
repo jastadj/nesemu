@@ -13,6 +13,8 @@
 Console* Console::m_Instance = nullptr;
 NES* Console::nes = nullptr;
 
+using namespace Arch6502;
+
 Console::Console():
     m_IOSState(nullptr)
 {
@@ -254,9 +256,9 @@ void Console::doMemRead(std::vector<std::string> args)
 
     std::cout << "Dumping memory @ 0x" << std::hex << std::setw(4) << std::setfill('0') << offset << ", len " << std::dec << len << std::endl;
 
-    if (offset + len > nes->m_CPU.m_Mem.size())
+    if (offset + len > nes->m_CPU.getMemSize())
     {
-        std::cout << "Range out of bounds ( > " << nes->m_CPU.m_Mem.size() << ")" << std::endl;
+        std::cout << "Range out of bounds ( > " << nes->m_CPU.getMemSize() << ")" << std::endl;
         return;
     }
 
@@ -297,7 +299,7 @@ void Console::doMemRead(std::vector<std::string> args)
 
         if (i >= offset && i < offset + len)
         {
-            std::cout << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.m_Mem.get(i)) << " ";
+            std::cout << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getAddr(i, false)) << " ";
         }
         else
         {
@@ -314,9 +316,9 @@ void Console::doMemWrite(std::vector<std::string> args)
     std::size_t byte_count = args.size();
 
     // Out-Of-Bounds?
-    if (offset + byte_count > nes->m_CPU.m_Mem.size())
+    if (offset + byte_count > nes->m_CPU.getMemSize())
     {
-        std::cout << "Offset out of bounds ( > " << nes->m_CPU.m_Mem.size() << ")" << std::endl;
+        std::cout << "Offset out of bounds ( > " << nes->m_CPU.getMemSize() << ")" << std::endl;
         return;
     }
     // Write each byte to memory
@@ -324,8 +326,8 @@ void Console::doMemWrite(std::vector<std::string> args)
     {
         std::size_t bpos = offset + i - 1;
         //uint8_t* bp = &m_CPU->m_Mem.get(bpos);
-        nes->m_CPU.m_Mem.set(bpos, uint8_t(Tools::toInt(args[i])));
-        std::cout << "Wrote " << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.m_Mem.get(bpos));
+        nes->m_CPU.setAddr(bpos, uint8_t(Tools::toInt(args[i])), false);
+        std::cout << "Wrote " << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getAddr(bpos, false));
         std::cout << " @ 0x" << std::hex << std::setw(4) << std::setfill('0') << bpos << std::endl;
     }
 }
@@ -336,13 +338,13 @@ void Console::doMemSave(std::vector<std::string> args)
     std::ofstream file(filename, std::ios::out | std::ios::binary);
     if (file.is_open())
     {
-        for (auto i = 0; i < nes->m_CPU.m_Mem.size(); i++)
+        for (auto i = 0; i < nes->m_CPU.getMemSize(); i++)
         {
-            file.put(nes->m_CPU.m_Mem.get(i));
+            file.put(nes->m_CPU.getAddr(i, false));
         }
         file.flush();
         file.close();
-        std::cout << "Wrote " << nes->m_CPU.m_Mem.size() << " bytes to " << filename << std::endl;
+        std::cout << "Wrote " << nes->m_CPU.getMemSize() << " bytes to " << filename << std::endl;
     }
     else
     {
@@ -353,13 +355,13 @@ void Console::doMemSave(std::vector<std::string> args)
 void Console::doMemFill(std::vector<std::string> args)
 {
     uint8_t val = Tools::toInt(args[0]);
-    nes->m_CPU.m_Mem.fill(val);
+    nes->m_CPU.fillMem(val);
     std::cout << "Memory filled with 0x" << std::hex << std::setw(2) << std::setfill('0') << int(val) << std::endl;
 }
 
 void Console::doMemFillRand(std::vector<std::string> args)
 {
-    nes->m_CPU.m_Mem.fillRandom();
+    nes->m_CPU.fillMemRandom();
     std::cout << "Memory filled with random values." << std::endl;
 }
 
@@ -378,15 +380,20 @@ void Console::doCPUShow(std::vector<std::string> args)
     std::cout << "Cycles/Batch: " << nes->m_Clock.getCyclesPerBatch() << std::endl;
     std::cout << "Running: " << Tools::getYesNo(nes->m_Clock.isRunning()) << std::endl;
     std::cout << "Ticks: " << nes->m_Clock.getTicks() << std::endl;
-    std::cout << "Memory Size: " << nes->m_CPU.m_Mem.size() << std::endl;
-    std::cout << "Registers" << std::endl;
-    std::cout << "---------" << std::endl;
+    std::cout << "Memory Size: " << nes->m_CPU.getMemSize() << std::endl;
+    std::cout << "Registers:" << std::endl;
     std::cout << "      PC: 0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->m_CPU.getPC()) << std::endl;
     std::cout << "   Stack: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getStackPtr()) << std::endl;
     std::cout << "     ACC: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getAcc()) << std::endl;
     std::cout << "       X: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getX()) << std::endl;
     std::cout << "       Y: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getY()) << std::endl;
-    std::cout << "  Status: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getStatus()) << std::endl;
+    std::cout << std::endl;
+    std::cout << " Status: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getStatus()) << std::endl;
+    for (int i = 0; i < 8; i++)
+    {
+        Arch6502::STATUS_BIT status_bit = Arch6502::STATUS_BIT(i);
+        std::cout << "  " << std::setw(9) << std::setfill(' ') << Arch6502::CPU::getStatusBitString(status_bit) << ": " << int(nes->m_CPU.getStatusBit(status_bit)) << std::endl;
+    }
     
     std::cout << std::dec << std::endl;
 }
@@ -401,9 +408,9 @@ void Console::doCPUExecute(std::vector<std::string> args)
 
     for (auto i = 0; i < count; i++)
     {
-        std::cout << "Executing CPU Instruction 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.m_Mem.get(nes->m_CPU.getPC()));
+        std::cout << "Executing CPU Instruction 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getAddr(nes->m_CPU.getPC(), false));
         std::cout << " @ 0x" << std::hex << std::setw(4) << std::setfill('0') << nes->m_CPU.getPC() << std::endl;
-        uint8_t opcode = nes->m_CPU.m_Mem.get(nes->m_CPU.getPC());
+        uint8_t opcode = nes->m_CPU.getAddr((nes->m_CPU.getPC()), false);
         bool result = nes->m_CPU.execute();
         if (!result)
         {
@@ -439,6 +446,6 @@ void Console::doASM(std::vector<std::string> args)
     outfile += ".bin";
 
     std::cout << "Compiling assembly file \"" << infile << "\" to binary \"" << outfile << "\"" << std::endl;
-    bool result = ASM6502::assemble(infile, outfile);
+    bool result = Arch6502::ASM::assemble(infile, outfile);
     std::cout << "Assembly successful = " << result << std::endl;
 }
