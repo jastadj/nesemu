@@ -1,5 +1,7 @@
 #include "cpuclock.h"
 
+#include <functional>
+
 class CPUClock6502: public CPUClock
 {
 public:
@@ -8,4 +10,5 @@ public:
 
     void onTick();
 
+    std::function<void()> onTickCallback;
 };

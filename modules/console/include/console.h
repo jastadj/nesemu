@@ -5,7 +5,11 @@
 #include <vector>
 #include <iostream>
 
-class NES;
+namespace NES
+{
+    class Console;
+}
+
 
 // TODO
 // - Allow non-menu commands to have sub commands
@@ -15,7 +19,7 @@ class Console
 public:
     static Console* getInstance();
 
-    static NES* nes;
+    static NES::Console* nes;
 
     void parseCommand(std::string cmd_str);
 
@@ -77,10 +81,18 @@ private:
     static void doCPUPC(std::vector<std::string> args);
     static void doCPUStart(std::vector<std::string> args);
     static void doCPUStop(std::vector<std::string> args);
-
+    static void doCPUShowOpcodes(std::vector<std::string> args);
 
     // ASM
     static void doASM(std::vector<std::string> args);
+
+    // NES
+    static void doNESOn(std::vector<std::string> args);
+    static void doNESOff(std::vector<std::string> args);
+    static void doNESReset(std::vector<std::string> args);
+    static void doNESShow(std::vector<std::string> args);
+    static void doNESLoad(std::vector<std::string> args);
+
 };
 
 #endif

@@ -7,6 +7,7 @@ set(PROJ_SOURCE
 	src/cpu6502.cpp
 	src/cpu6502clock.cpp
 	src/cpuclock.cpp
+	src/defs6502.cpp
 	src/memorymap.cpp
 	src/opcodes6502.cpp
 	src/tools.cpp

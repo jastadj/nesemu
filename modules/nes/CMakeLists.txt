@@ -4,6 +4,8 @@ set(PROJ_NAMESPACE ${PROJ_NAME})
 # Project Source
 set(PROJ_SOURCE
 	src/nes.cpp
+	src/cart.cpp
+	src/nesdefs.cpp
 )
 
 set(PROJ_HEADERS
@@ -11,6 +13,8 @@ set(PROJ_HEADERS
 
 set(PROJ_PUBLIC_HEADERS
 	include/nes.h
+	include/cart.h
+	include/nesdefs.h
 )
 
 add_library(${PROJ_NAME} STATIC ${PROJ_SOURCE} ${PROJ_HEADERS} ${PROJ_PUBLIC_HEADERS})

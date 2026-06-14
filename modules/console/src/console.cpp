@@ -8,10 +8,13 @@
 
 #include "nes.h"
 #include "asm6502.h"
+#include "opcodes6502.h"
+#include "nesdefs.h"
+#include "cart.h"
 
 // Statics
 Console* Console::m_Instance = nullptr;
-NES* Console::nes = nullptr;
+NES::Console* Console::nes = nullptr;
 
 using namespace Arch6502;
 
@@ -40,9 +43,16 @@ Console::Console():
     m_Commands.back().sub_commands.emplace_back(Command("pc", "Set program counter (usage: pc <offset>)", doCPUPC, 1, 1));
     m_Commands.back().sub_commands.emplace_back(Command("start", "Start the CPU Clock", doCPUStart, 0, 0));
     m_Commands.back().sub_commands.emplace_back(Command("stop", "Stop the CPU Clock", doCPUStop, 0, 0));
+    m_Commands.back().sub_commands.emplace_back(Command("opcodes", "Show opcodes", doCPUShowOpcodes, 0, 0));
 
-    m_Commands.emplace_back(Command("asm", "Compile assembly file (usage: asm <input_asm>)", doASM, 1,1));
+    m_Commands.emplace_back(Command("asm", "Compile assembly file to NES rom (usage: asm <input_asm>)", doASM, 1,1));
 
+    m_Commands.emplace_back(Command("nes", "NES commands"));
+    m_Commands.back().sub_commands.emplace_back(Command("show", "Show NES info", doNESShow));
+    m_Commands.back().sub_commands.emplace_back(Command("on", "Power On NES", doNESOn));
+    m_Commands.back().sub_commands.emplace_back(Command("off", "Power Off NES", doNESOff));
+    m_Commands.back().sub_commands.emplace_back(Command("reset", "Reset NES", doNESReset));
+    m_Commands.back().sub_commands.emplace_back(Command("load", "Load ROM", doNESLoad, 1, 1));
 }
 
 Console::~Console()
@@ -408,15 +418,13 @@ void Console::doCPUExecute(std::vector<std::string> args)
 
     for (auto i = 0; i < count; i++)
     {
-        std::cout << "Executing CPU Instruction 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getAddr(nes->m_CPU.getPC(), false));
-        std::cout << " @ 0x" << std::hex << std::setw(4) << std::setfill('0') << nes->m_CPU.getPC() << std::endl;
-        uint8_t opcode = nes->m_CPU.getAddr((nes->m_CPU.getPC()), false);
-        bool result = nes->m_CPU.execute();
-        if (!result)
-        {
-            std::cout << "Error executing opcode 0x" << std::hex << std::setw(2) << std::setfill('0') << int(opcode) << std::endl;
-            break;
-        }
+        uint16_t addr = nes->m_CPU.getPC();
+        uint8_t opcode = nes->m_CPU.getAddr(nes->m_CPU.getPC(), false);
+        int cycles = nes->m_CPU.execute();
+
+        std::cout << "Executed CPU Instruction 0x" << std::hex << std::setw(2) << std::setfill('0') << int(opcode);
+        std::cout << " @ 0x" << std::hex << std::setw(4) << std::setfill('0') << int(addr);
+        std::cout << " in " << cycles << " cycle(s)" << std::endl;
     }
 }
 
@@ -437,15 +445,114 @@ void Console::doCPUStop(std::vector<std::string> args)
     std::cout << "CPU Stopped: " << Tools::getYesNo(nes->m_Clock.stop()) << std::endl;
 }
 
+void Console::doCPUShowOpcodes(std::vector<std::string> args)
+{
+    std::vector<uint8_t> opcodes;
+    bool errors = false;
+    for (int i = 0; i < 256; i++)
+    {
+        Arch6502::OpCode::initCodes();
+        Arch6502::OpCode* opcode = Arch6502::OpCode::codes[i];
+        if (opcode != nullptr)
+        {
+            if (opcode->getCode() == i)
+            {
+                std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << i << " == ";
+                std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << int(opcode->getCode()) << " ";
+                std::cout << opcode->getMnemonic() << " " << Arch6502::getAddressModeString(opcode->getAddressMode()) << std::endl;
+            }
+            else
+            {
+                std::cerr << "ERROR: 0x" << std::hex << std::setw(2) << std::setfill('0') << i << " ";
+                std::cout << " != 0x" << std::hex << std::setw(2) << std::setfill('0') << int(opcode->getCode()) << std::endl;
+                errors = true;
+            }
+        }
+        if (errors)
+        {
+            std::cout << "Errors were found in opcodes." << std::endl;
+        }
+    }
+}
+
 void Console::doASM(std::vector<std::string> args)
 {
     std::string infile = args[0];
     std::string outfile = Tools::getFilename(infile);
     std::string extension = Tools::getFileExtension(infile);
     outfile.resize(outfile.size() - extension.size());
-    outfile += ".bin";
+    outfile += ".nes";
 
     std::cout << "Compiling assembly file \"" << infile << "\" to binary \"" << outfile << "\"" << std::endl;
     bool result = Arch6502::ASM::assemble(infile, outfile);
     std::cout << "Assembly successful = " << result << std::endl;
+}
+
+// NES
+
+void Console::doNESOn(std::vector<std::string> args)
+{
+    std::cout << "Powering on NES." << std::endl;
+    nes->on();
+}
+
+void Console::doNESOff(std::vector<std::string> args)
+{
+    std::cout << "Powering off NES." << std::endl;
+    nes->off();
+}
+
+void Console::doNESReset(std::vector<std::string> args)
+{
+    std::cout << "Resetting NES to 0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->m_ResetVector) << std::endl;
+    nes->reset();
+}
+
+void Console::doNESShow(std::vector<std::string> args)
+{
+    std::cout << "NES" << std::endl;
+    std::cout << "---" << std::endl;
+    std::cout << "NES_CLOCK_HZ: " << NES_CLOCK_HZ << " Hz" << std::endl;
+    std::cout << "On..........: " << Tools::getYesNo(nes->isOn()) << std::endl;
+    std::cout << "Reset Vector: 0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->m_ResetVector) << std::endl;
+}
+
+void Console::doNESLoad(std::vector<std::string> args)
+{
+    NES::Cart cart(args[0]);
+    if (cart.data)
+    {
+        std::cout << "Cart:" << std::endl;
+        std::cout << "  Filename....: \"" << cart.filename << "\"" << std::endl;
+        std::cout << "  Format......: " << NES::Cart::getFormatString(cart.format) << std::endl;
+        std::cout << "  Size........: " << cart.data_size << std::endl;
+        std::cout << "  Mapper......: " << int(cart.getMapper()) << std::endl;
+        std::cout << "  SubMapper...: " << int(cart.getSubMapper()) << std::endl;
+        std::cout << "  Console.....: " << NES::getConsoleTypeString(cart.getConsoleType()) << std::endl;
+        std::cout << "  Timing Mode.: " << NES::getTimingModeString(cart.getTimingMode()) << std::endl;
+        std::cout << "  Reset Vector: " << std::hex << std::setw(2) << std::setfill('0') << int(cart.getResetVector()) << std::endl;
+        std::cout << "  Header......: ";
+        for (int i = 0; i < 16; i++)
+        {
+            std::cout << std::hex << std::setw(2) << std::setfill('0') << int(cart.data[i]) << " ";
+        }
+        std::cout << std::endl;
+        std::cout << std::dec << std::setw(0);
+        std::cout << "  PRG-ROM Size: " << cart.getPRGROMSize() << std::endl;
+        std::cout << "  CHR-ROM Size: " << cart.getCHRROMSize() << std::endl;
+        std::cout << "  RAM:" << std::endl;
+        std::cout << "    Battery-backed/NV Ram: " << cart.hasNVRam() << std::endl;
+        std::cout << "    PRG-RAM Size.........: " << cart.getPRGRAMSize() << std::endl;
+        std::cout << "    CHR-RAM Size.........: " << cart.getCHRRAMSize() << std::endl;
+        std::cout << "    PRG-NVRAM Size..: " << cart.getPRGNVRAMSize() << std::endl;
+        std::cout << "    CHR-NVRAM Size..: " << cart.getCHRNVRAMSize() << std::endl;
+        std::cout << "  Flags:" << std::endl;
+        std::cout << "    Nametable Horizontally Arranged: " << cart.isNametableHorizontallyArranged() << std::endl;
+        std::cout << "    Trainer........................: " << cart.hasTrainer() << std::endl;
+        std::cout << "    Alternative Nametable Layout...: " << cart.hasAlternativeNametableLayout() << std::endl;
+    }
+    else
+    {
+        std::cout << "Failed to load \"" << args[0] << "\"" << std::endl;
+    }
 }

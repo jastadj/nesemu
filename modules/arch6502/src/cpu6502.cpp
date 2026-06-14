@@ -11,6 +11,9 @@ using namespace Arch6502;
 CPU::CPU():
     m_Mem(0xffff)
 {
+    // Init OpCodes (if not already initialized)
+    OpCode::initCodes();
+
     m_CyclesToProcess = 0;
 
     // Init Registers
@@ -25,6 +28,7 @@ CPU::CPU():
     
     // Status Register
     m_Status = 0;
+
 }
 
 CPU::~CPU()
@@ -41,11 +45,14 @@ int CPU::execute()
 
     uint8_t opcode = getAddr(m_PC++);
 
-    switch (opcode)
+    OpCode* op = OpCode::codes[opcode];
+    if (op != nullptr)
     {
-    default:
-        m_CyclesToProcess++;
-        break;
+        op->execute(*this);
+    }
+    if (m_CyclesToProcess == 0)
+    {
+        return 1;
     }
     return m_CyclesToProcess;
 }
@@ -59,9 +66,19 @@ const uint8_t CPU::getAcc() const
     return m_ACC;
 }
 
+void CPU::setAcc(uint8_t val)
+{
+    m_ACC = val;
+}
+
 const uint8_t CPU::getX() const
 {
     return m_RX;
+}
+
+void CPU::setX(uint8_t val)
+{
+    m_RX = val;
 }
 
 const uint8_t CPU::getY() const
@@ -69,11 +86,35 @@ const uint8_t CPU::getY() const
     return m_RY;
 }
 
-
+void CPU::setY(uint8_t val)
+{
+    m_RY = val;
+}
 
 const uint8_t CPU::getStackPtr() const
 {
     return m_StackPtr;
+}
+
+void CPU::pushStack(uint16_t val)
+{
+    pushStack(uint8_t(val >> 8));
+    pushStack(uint8_t(val & 0xff));
+}
+
+void CPU::pushStack(uint8_t val)
+{
+    setAddr(m_StackPtr--, val);
+}
+
+uint8_t CPU::popStack()
+{
+    return getAddr(++m_StackPtr);
+}
+
+void Arch6502::CPU::resetStack()
+{
+    m_StackPtr = 0xff;
 }
 
 const uint16_t CPU::getPC() const
@@ -193,6 +234,8 @@ const char* CPU::getStatusBitString(STATUS_BIT status_bit)
 
 uint16_t CPU::getOperand(ADDRESS_MODE address_mode)
 {
+    m_CyclesToProcess++;
+
     switch (address_mode)
     {
     case ADDRESS_MODE::IMMEDIATE:

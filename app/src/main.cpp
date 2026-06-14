@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
     GLWindow window;
     */
     Console* console = Console::getInstance();
-    NES nes;
+    NES::Console nes;
 
     // NES reference for console
     console->nes = &nes;

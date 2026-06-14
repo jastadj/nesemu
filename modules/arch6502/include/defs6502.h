@@ -5,6 +5,7 @@ namespace Arch6502
 {
     enum ADDRESS_MODE
     {
+        IMPLIED,
         IMMEDIATE,
         ZERO_PAGE,
         ZERO_PAGE_X,
@@ -16,6 +17,7 @@ namespace Arch6502
         INDIRECT_Y,
         ADDR_ERROR
     };
+    const char* getAddressModeString(ADDRESS_MODE mode);
 
     enum STATUS_BIT
     {

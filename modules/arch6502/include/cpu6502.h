@@ -20,12 +20,22 @@ namespace Arch6502
 
         // Registers
         const uint8_t getAcc() const;
+        void setAcc(uint8_t val);
         const uint8_t getX() const;
+        void setX(uint8_t val);
         const uint8_t getY() const;
+        void setY(uint8_t val);
+
+        // Stack
         const uint8_t getStackPtr() const;
-        const uint16_t getPC() const;
+        void pushStack(uint16_t val);
+        void pushStack(uint8_t val);
+        uint8_t popStack();
+        void resetStack();
+
 
         // Program Counter
+        const uint16_t getPC() const;
         void setPC(const uint16_t pc);
         void setPCL(const uint8_t pcl); // Set PC Low Byte
         void setPCH(const uint8_t pch); // Set PC High Byte
@@ -42,12 +52,15 @@ namespace Arch6502
         const uint8_t getStatus() const;
         void setStatusBit(STATUS_BIT bit, bool enabled);
         const uint8_t getStatusBit(STATUS_BIT bit) const;
-
         static const char* getStatusBitString(STATUS_BIT status_bit);
+
+        // OpCodes
+        uint16_t getOperand(ADDRESS_MODE address_mode);
+
 
     private:
 
-        uint8_t m_CyclesToProcess;
+        unsigned int m_CyclesToProcess;
 
         // Registers
         uint8_t m_ACC;
@@ -59,8 +72,6 @@ namespace Arch6502
 
         // Memory
         MemoryMap m_Mem;
-
-        uint16_t getOperand(ADDRESS_MODE address_mode);
     };
 }
 
