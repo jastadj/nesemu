@@ -121,27 +121,33 @@ std::vector<uint8_t> ASM::getBytes(std::string asm_line)
 
     asm_line = Tools::toLower(asm_line);
 
-    std::vector<std::string> words = Tools::split(asm_line);
-    std::string op = words[0];
+    std::vector<std::string> strings = Tools::split(asm_line);
     ADDRESS_MODE mode = ADDRESS_MODE::IMPLIED;
-    std::vector<uint16_t> operand_bytes;
 
-    if (words.size() > 1)
+    std::string op_str = strings[0];
+    strings.erase(strings.begin());
+    std::vector<std::string> operand_strings = strings;
+        
+    // Parse Op and Operand strings into bytes
+    OpCodes::OpFunc* opfunc = OpCodes::LUT::getOpFuncByMnemonic(op_str);
+    if (opfunc)
     {
-        operand_bytes = parseOperand(words[1], mode);
-    }
-    
-    OpCode* opcode = getOpCode(op, mode);
-
-    if (opcode)
-    {
-        data.push_back(opcode->getCode());
-        for (auto& b : operand_bytes)
+        std::map<ADDRESS_MODE, uint8_t> modemap = opfunc->getModeMap();
+        if (modemap.count(mode))
         {
-            data.push_back(b);
+            // Operand Byte
+            data.push_back(modemap[mode]);
+            // Operand Bytes
+            for (auto operand_str : operand_strings)
+            {
+                for (auto& b : parseOperand(operand_str, mode))
+                {
+                    data.push_back(b);
+                }
+            }
         }
     }
-    
+
     return data;
 }
 
@@ -176,23 +182,4 @@ std::vector<uint16_t> ASM::parseOperand(std::string operand, ADDRESS_MODE& mode)
     }
 
     return bytes;
-}
-
-OpCode* Arch6502::ASM::getOpCode(std::string mnemonic, ADDRESS_MODE mode)
-{
-    OpCode::initCodes();
-    for (auto& opcode : OpCode::codes)
-    {
-        if (opcode)
-        {
-            if (opcode->getMnemonic() == mnemonic)
-            {
-                if (opcode->getAddressMode() == mode)
-                {
-                    return opcode;
-                }
-            }
-        }
-    }
-    return nullptr;
 }

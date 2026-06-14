@@ -8,7 +8,7 @@
 
 namespace Arch6502
 {
-    class OpCode;
+    class OpFunc;
 
     namespace ASM
     {
@@ -16,7 +16,6 @@ namespace Arch6502
 
         std::vector<uint8_t> getBytes(std::string asm_line);
         std::vector<uint16_t> parseOperand(std::string operand, ADDRESS_MODE& mode);
-        OpCode* getOpCode(std::string mnemonic, ADDRESS_MODE mode);
     };
 }
 

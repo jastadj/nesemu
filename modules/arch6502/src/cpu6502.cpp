@@ -12,7 +12,7 @@ CPU::CPU():
     m_Mem(0xffff)
 {
     // Init OpCodes (if not already initialized)
-    OpCode::initCodes();
+    OpCodes::LUT::init();
 
     m_CyclesToProcess = 0;
 
@@ -45,14 +45,14 @@ int CPU::execute()
 
     uint8_t opcode = getAddr(m_PC++);
 
-    OpCode* op = OpCode::codes[opcode];
-    if (op != nullptr)
+    OpCodes::OpFunc* opfunc = OpCodes::LUT::codes[opcode];
+    if (opfunc != nullptr)
     {
-        op->execute(*this);
+        opfunc->execute(*this, OpCodes::LUT::modes[opcode]);
     }
     if (m_CyclesToProcess == 0)
     {
-        return 1;
+        m_CyclesToProcess = 1;
     }
     return m_CyclesToProcess;
 }

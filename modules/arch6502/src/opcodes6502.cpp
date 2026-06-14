@@ -5,118 +5,94 @@
 
 #include "cpu6502.h"
 
-using namespace Arch6502;
+using namespace Arch6502::OpCodes;
+typedef Arch6502::ADDRESS_MODE ADDRESS_MODE;
 
-std::vector<OpCode*> OpCode::codes = std::vector<OpCode*>();
+// Statics
+std::vector<OpFunc*> Arch6502::OpCodes::LUT::codes = std::vector<OpFunc*>();
+std::vector<ADDRESS_MODE> Arch6502::OpCodes::LUT::modes = std::vector<ADDRESS_MODE>();
 
-bool OpCode::initCodes()
+bool LUT::registerOpCode(OpFunc* opcode)
 {
-    if (!codes.empty())
+    if (opcode == nullptr)
     {
         return false;
     }
-    codes = std::vector<OpCode*>(256, nullptr);
 
-    codes[0x00] = new OpCodeBRK();
+    std::map<ADDRESS_MODE, uint8_t> m_ModeMap = opcode->getModeMap();
+    for (auto& code : m_ModeMap)
+    {
+        if (codes[code.second] == nullptr)
+        {
+            codes[code.second] = opcode;
+            modes[code.second] = code.first;
+        }
+        else
+        {
+            std::cerr << "Error registering opcode " << opcode->getMnemonic() << ", conflicting code 0x";
+            std::cerr << std::hex << code.second << " already registered." << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Arch6502::OpCodes::LUT::init()
+{
+    if (!codes.empty() || !modes.empty())
+    {
+        return false;
+    }
+    
+    //codeLUT = std::vector<OpFunc*>(code_count, nullptr);
+    codes = std::vector<OpFunc*>(OPCODE_COUNT, nullptr);
+    modes = std::vector<ADDRESS_MODE>(OPCODE_COUNT, ADDRESS_MODE::ADDR_ERROR);
 
     // LDX
-    codes[0xa2] = new OpCodeLDXImmediate();
-    codes[0xa6] = new OpCodeLDXZeroPage();
-    codes[0xb6] = new OpCodeLDXZeroPageY();
-    codes[0xae] = new OpCodeLDXAbsolute();
-    codes[0xbe] = new OpCodeLDXAbsoluteY();
-
-    // LDY
-    codes[0xa0] = new OpCodeLDYImmediate();
-    codes[0xa4] = new OpCodeLDYZeroPage();
-    codes[0xb4] = new OpCodeLDYZeroPageX();
-    codes[0xac] = new OpCodeLDYAbsolute();
-    codes[0xbc] = new OpCodeLDYAbsoluteY();
-
-
+    OpFunc* ldx = new OpFuncLDX();
+    registerOpCode(ldx);
 
     return true;
 }
 
-OpCode::OpCode(std::string mnemonic, uint8_t code, ADDRESS_MODE mode)
+OpFunc* Arch6502::OpCodes::LUT::getOpFuncByMnemonic(std::string mnemonic)
 {
-    this->mnemonic = mnemonic;
-    this->code = code;
-    this->mode = mode;
+    init();
+    for (int i = 0; i < 256; i++)
+    {
+        if (codes[i] && codes[i]->getMnemonic() == mnemonic)
+        {
+            return codes[i];
+        }
+    }
+    return nullptr;
 }
 
-OpCode::OpCode(std::string mnemonic, std::map<ADDRESS_MODE, uint8_t> modes)
+OpFunc::OpFunc(std::string mnemonic, std::string description, std::map<ADDRESS_MODE, uint8_t> modemap)
 {
-    this->mnemonic = mnemonic;
-    this->modes = modes;
+    m_Mnemonic = mnemonic;
+    m_Description = description;
+    m_ModeMap = modemap;
 }
 
-const std::string OpCode::getMnemonic() const
+std::string OpFunc::getMnemonic() const
 {
-    return mnemonic;
+    return m_Mnemonic;
 }
 
-const uint8_t OpCode::getCode() const
+std::string OpFunc::getDescription() const
 {
-    return code;
+    return m_Description;
 }
 
-const ADDRESS_MODE OpCode::getAddressMode() const
+std::map<ADDRESS_MODE, uint8_t> OpFunc::getModeMap() const
 {
-    return mode;
+    return m_ModeMap;
 }
 
-void Arch6502::OpCodeBRK::execute(CPU& cpu)
-{
-    cpu.setStatusBit(STATUS_BIT::S_INTERRUPT, true);
-}
+////////////////////////////////////////////////////////////////////////////////
 
-void Arch6502::OpCodeLDXImmediate::execute(CPU& cpu)
+void OpFuncLDX::execute(CPU& cpu, ADDRESS_MODE mode)
 {
     cpu.setX(cpu.getOperand(mode));
-}
-
-void Arch6502::OpCodeLDXZeroPage::execute(CPU& cpu)
-{
-    cpu.setX(cpu.getOperand(mode));
-}
-
-void Arch6502::OpCodeLDXZeroPageY::execute(CPU& cpu)
-{
-    cpu.setX(cpu.getOperand(mode));
-}
-
-void Arch6502::OpCodeLDXAbsolute::execute(CPU& cpu)
-{
-    cpu.setX(cpu.getOperand(mode));
-}
-
-void Arch6502::OpCodeLDXAbsoluteY::execute(CPU& cpu)
-{
-    cpu.setX(cpu.getOperand(mode));
-}
-
-void Arch6502::OpCodeLDYImmediate::execute(CPU& cpu)
-{
-    cpu.setY(cpu.getOperand(mode));
-}
-
-void Arch6502::OpCodeLDYZeroPage::execute(CPU& cpu)
-{
-    cpu.setY(cpu.getOperand(mode));
-}
-
-void Arch6502::OpCodeLDYZeroPageX::execute(CPU& cpu)
-{
-    cpu.setY(cpu.getOperand(mode));
-}
-
-void Arch6502::OpCodeLDYAbsolute::execute(CPU& cpu)
-{
-    cpu.setY(cpu.getOperand(mode));
-}
-
-void Arch6502::OpCodeLDYAbsoluteY::execute(CPU& cpu)
-{
-    cpu.setY(cpu.getOperand(mode));
 }

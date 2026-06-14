@@ -447,27 +447,51 @@ void Console::doCPUStop(std::vector<std::string> args)
 
 void Console::doCPUShowOpcodes(std::vector<std::string> args)
 {
-    std::vector<uint8_t> opcodes;
     bool errors = false;
-    for (int i = 0; i < 256; i++)
+    Arch6502::OpCodes::LUT::init();
+
+    std::size_t code_count = Arch6502::OpCodes::LUT::codes.size();
+    std::size_t mode_count = Arch6502::OpCodes::LUT::modes.size();
+
+    std::cout << "Code LUT Size: " << code_count << std::endl;
+    std::cout << "Mode LUT Size: " << mode_count << std::endl;
+    if (code_count != mode_count)
     {
-        Arch6502::OpCode::initCodes();
-        Arch6502::OpCode* opcode = Arch6502::OpCode::codes[i];
-        if (opcode != nullptr)
+        std::cerr << "Error, code and mode LUTs are not the same size!" << std::endl;
+        errors = true;
+    }
+
+    std::cout << std::endl;
+    std::cout << "Codes" << std::endl;
+    std::cout << "-----" << std::endl;
+
+    for (int opcode = 0; opcode < 256; opcode++)
+    {
+        // Get op func from op code LUT
+        Arch6502::OpCodes::OpFunc* opfunc = Arch6502::OpCodes::LUT::codes[opcode];
+        if (opfunc != nullptr)
         {
-            if (opcode->getCode() == i)
+            // Get the addressing modes supported by the op function
+            std::map<ADDRESS_MODE, uint8_t> addrmodes = opfunc->getModeMap();
+            // Find the registered address mode for current opcode
+            ADDRESS_MODE opcodemode = Arch6502::OpCodes::LUT::modes[opcode];
+            // If everything lines up (the opfunc's address mode's opcode == opcode)
+            if (addrmodes.count(opcodemode) && opcode == addrmodes[opcodemode])
             {
-                std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << i << " == ";
-                std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << int(opcode->getCode()) << " ";
-                std::cout << opcode->getMnemonic() << " " << Arch6502::getAddressModeString(opcode->getAddressMode()) << std::endl;
+                std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << opcode << " ";
+                std::cout << opfunc->getMnemonic() << " - ";
+                std::cout << std::setw(12) << std::setfill(' ') << Arch6502::getAddressModeString(opcodemode) << " - ";
+                std::cout << "\"" << opfunc->getDescription() << "\"" << std::endl;
             }
             else
             {
-                std::cerr << "ERROR: 0x" << std::hex << std::setw(2) << std::setfill('0') << i << " ";
-                std::cout << " != 0x" << std::hex << std::setw(2) << std::setfill('0') << int(opcode->getCode()) << std::endl;
+                std::cerr << "OPCODE ERROR: 0x" << std::hex << std::setw(2) << std::setfill('0') << opcode << " ";
+                std::cerr << Arch6502::getAddressModeString(opcodemode) << " not found but expected." << std::endl;
                 errors = true;
             }
         }
+
+        // Report if errors were detected
         if (errors)
         {
             std::cout << "Errors were found in opcodes." << std::endl;
