@@ -12,12 +12,12 @@ NES::Console::Console():
     m_Cart(nullptr)
 {
     // Create Memory Map
-    m_MemoryMap = new MemoryMap(1024 * 64);
+    m_MemoryMaps = new MemoryMap(1024 * 64);
 
     // Init System Ram Mirrors
-    m_MemoryMap->addMirror(0x0000, 0x0800, 0x0800);
-    m_MemoryMap->addMirror(0x0000, 0x1000, 0x0800);
-    m_MemoryMap->addMirror(0x0000, 0x1800, 0x0800);
+    m_MemoryMaps->addMirror(0x0000, 0x0800, 0x0800);
+    m_MemoryMaps->addMirror(0x0000, 0x1000, 0x0800);
+    m_MemoryMaps->addMirror(0x0000, 0x1800, 0x0800);
 
     // Other Memory
     // 0x6000 - 0x7fff = NV RAM / Battery Back RAM
@@ -25,12 +25,13 @@ NES::Console::Console():
     // 0x8000 - 0xffff = Cartridge Data
     // 0xfffc = Reset Vector
 
-    // Memory Map Banks (cartridge mapping)
+    // PRG-ROM Mapping
+    m_MemoryMaps->addSubMap(0x8000, 0x8000);
     
 
 
     // Assign Memory Map to CPU
-    m_CPU.setMemoryMap(m_MemoryMap);
+    m_CPU.setMemoryMap(m_MemoryMaps);
 
 
     // Set Clock Tick Callback
@@ -96,17 +97,17 @@ const NES::Cart* NES::Console::getCart()
 
 uint16_t NES::Console::getNMIVector()
 {
-    return (m_MemoryMap->get(NES_NMI_ADDR + 1) << 8) | m_MemoryMap->get(NES_NMI_ADDR + 1);
+    return (m_MemoryMaps->get(NES_NMI_ADDR + 1) << 8) | m_MemoryMaps->get(NES_NMI_ADDR + 1);
 }
 
 uint16_t NES::Console::getResetVector()
 {
-    return (m_MemoryMap->get(NES_RES_ADDR + 1) << 8) | m_MemoryMap->get(NES_RES_ADDR + 1);
+    return (m_MemoryMaps->get(NES_RES_ADDR + 1) << 8) | m_MemoryMaps->get(NES_RES_ADDR + 1);
 }
 
 uint16_t NES::Console::getIRQVector()
 {
-    return (m_MemoryMap->get(NES_IRQ_ADDR + 1) << 8) | m_MemoryMap->get(NES_IRQ_ADDR + 1);
+    return (m_MemoryMaps->get(NES_IRQ_ADDR + 1) << 8) | m_MemoryMaps->get(NES_IRQ_ADDR + 1);
 }
 
 void NES::Console::onTick()

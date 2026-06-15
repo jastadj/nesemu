@@ -8,8 +8,10 @@ set(PROJ_SOURCE
 	src/cpu6502clock.cpp
 	src/cpuclock.cpp
 	src/defs6502.cpp
+	src/memorybank.cpp
 	src/memorymap.cpp
 	src/opcodes6502.cpp
+	src/submemorymap.cpp
 	src/tools.cpp
 	
 )
@@ -23,8 +25,10 @@ set(PROJ_PUBLIC_HEADERS
 	include/cpu6502clock.h
 	include/cpuclock.h
 	include/defs6502.h
+	include/memorybank.h
 	include/memorymap.h
 	include/opcodes6502.h
+	include/submemorymap.h
 	include/tools.h
 )
 

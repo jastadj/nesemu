@@ -1,23 +1,39 @@
 #include "memorymap.h"
 
+#include "submemorymap.h"
+
 // Debug
 #include <iostream>
 
 MemoryMap::MemoryMap(std::size_t init_size):
-    m_MemorySize(init_size),
-    m_SelectedBank(0)
+    MemoryBank(init_size)
 {
-    addBank();
+
 }
 
 MemoryMap::~MemoryMap()
 {
-    m_MemoryMap.clear();
+    for (auto submap : m_SubMemoryMaps)
+    {
+        delete submap;
+    }
+    m_SubMemoryMaps.clear();
 }
 
-const std::size_t MemoryMap::size() const
+
+bool MemoryMap::addMirror(std::size_t source_addr, std::size_t dest_addr, std::size_t len)
 {
-    return m_MemorySize;
+    if ((source_addr + len > m_MemoryBanks.size()) || (dest_addr + len > m_MemoryBanks.size()))
+    {
+        return false;
+    }
+
+    // Delete destination map and replace with source pointer
+    for (auto i = 0; i < len; i++)
+    {
+        m_MemoryBanks[dest_addr + i] = m_MemoryBanks[source_addr + i];
+    }
+    return true;
 }
 
 const uint8_t MemoryMap::get(std::size_t addr, bool* ok) const
@@ -28,7 +44,14 @@ const uint8_t MemoryMap::get(std::size_t addr, bool* ok) const
         {
             *ok = true;
         }
-        return *m_MemoryMap[m_SelectedBank][addr];
+        for (auto submap : m_SubMemoryMaps)
+        {
+            if (addr >= submap->getOffset() && addr < (submap->getOffset() + submap->size()))
+            {
+                return submap->get(addr - submap->getOffset(), ok);
+            }
+        }
+        return *m_MemoryBanks[m_SelectedBank][addr];
     }
     if (ok != nullptr)
     {
@@ -39,83 +62,52 @@ const uint8_t MemoryMap::get(std::size_t addr, bool* ok) const
 
 bool MemoryMap::set(std::size_t addr, const uint8_t val)
 {
-    if (addr < m_MemoryMap.size())
+    if (addr < m_MemoryBanks.size())
     {
-        *m_MemoryMap[m_SelectedBank][addr] = val;
+        for (auto submap : m_SubMemoryMaps)
+        {
+            if (addr >= submap->getOffset() && addr < (submap->getOffset() + submap->size()))
+            {
+                return submap->set(addr - submap->getOffset(), val);
+            }
+        }
+        *m_MemoryBanks[m_SelectedBank][addr] = val;
         return true;
     }
     return false;
 }
 
-void MemoryMap::fill(const uint8_t val)
+// Sub-Banks
+SubMemoryMap* MemoryMap::addSubMap(std::size_t offset, std::size_t len)
 {
-    for (auto i = 0; i < m_MemoryMap.size(); i++)
+    // Check to make sure this isn't overlapping with any other sub-memory maps
+    for (auto& submap : m_SubMemoryMaps)
     {
-        set(i, val);
-    }
-}
-
-void MemoryMap::fillRandom()
-{
-    for (auto i = 0; i < m_MemoryMap.size(); i++)
-    {
-        set(i, rand() % 256);
-    }
-}
-
-bool MemoryMap::addMirror(std::size_t source_addr, std::size_t dest_addr, std::size_t len)
-{
-    if ((source_addr + len > m_MemoryMap.size()) || (dest_addr + len > m_MemoryMap.size()))
-    {
-        return false;
+        if (offset >= submap->getOffset() && offset < submap->getOffset() + submap->size())
+        {
+            return nullptr;
+        }
+        if ((offset + len) >= submap->getOffset() && (offset + len) < submap->getOffset() + submap->size())
+        {
+            return nullptr;
+        }
     }
 
-    // Delete destination map and replace with source pointer
-    for (auto i = 0; i < len; i++)
+    SubMemoryMap* new_submap = new SubMemoryMap(offset, len);
+    m_SubMemoryMaps.push_back(new_submap);
+    return new_submap;
+}
+
+std::size_t MemoryMap::getSubMaps() const
+{
+    return m_SubMemoryMaps.size();
+}
+
+SubMemoryMap* MemoryMap::getSubMap(unsigned int index)
+{
+    if (index < (unsigned int)m_SubMemoryMaps.size())
     {
-        m_MemoryMap[dest_addr + i] = m_MemoryMap[source_addr + i];
+        return m_SubMemoryMaps[index];
     }
-    return true;
-}
-
-// Banks
-
-void MemoryMap::addBank()
-{
-    std::vector< std::shared_ptr<uint8_t> > bank;
-    for (auto i = 0; i < size(); i++)
-    {
-        bank.emplace_back(std::make_shared<uint8_t>());
-    }
-    m_MemoryMap.push_back(bank);
-}
-
-bool MemoryMap::deleteBank()
-{
-    if (getBanks() > 1)
-    {
-        m_MemoryMap.pop_back();
-        return true;
-    }
-    return false;
-}
-
-std::size_t MemoryMap::getBanks() const
-{
-    return m_MemoryMap.size();
-}
-
-bool MemoryMap::selectBank(unsigned int index)
-{
-    if (index < getBanks())
-    {
-        m_SelectedBank = index;
-        return true;
-    }
-    return false;
-}
-
-unsigned int MemoryMap::selectedBank() const
-{
-    return m_SelectedBank;
+    return nullptr;
 }

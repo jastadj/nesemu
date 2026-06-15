@@ -9,7 +9,7 @@
 using namespace Arch6502;
 
 CPU::CPU():
-    m_MemoryMap(nullptr)
+    m_MemoryMaps(nullptr)
 {
     // Init OpCodes (if not already initialized)
     OpCodes::LUT::init();
@@ -41,11 +41,11 @@ CPU::~CPU()
 
 int CPU::execute()
 {
-    if (m_MemoryMap)
+    if (m_MemoryMaps)
     {
         m_CyclesToProcess = 0;
 
-        uint8_t opcode = m_MemoryMap->get(m_PC++);
+        uint8_t opcode = m_MemoryMaps->get(m_PC++);
 
         OpCodes::OpFunc* opfunc = OpCodes::LUT::codes[opcode];
         if (opfunc != nullptr)
@@ -109,17 +109,17 @@ void CPU::pushStack(uint16_t val)
 
 void CPU::pushStack(uint8_t val)
 {
-    if (m_MemoryMap)
+    if (m_MemoryMaps)
     {
-        m_MemoryMap->set(m_StackPtr--, val);
+        m_MemoryMaps->set(m_StackPtr--, val);
     }
 }
 
 uint8_t CPU::popStack()
 {
-    if (m_MemoryMap)
+    if (m_MemoryMaps)
     {
-        return m_MemoryMap->get(++m_StackPtr);
+        return m_MemoryMaps->get(++m_StackPtr);
     }
     return 0;
 }
@@ -151,12 +151,12 @@ void CPU::setPCH(const uint8_t pch)
 
 void CPU::setMemoryMap(MemoryMap* memory)
 {
-    m_MemoryMap = memory;
+    m_MemoryMaps = memory;
 }
 
 bool CPU::hasMemoryMap() const
 {
-    return m_MemoryMap != nullptr;
+    return m_MemoryMaps != nullptr;
 }
 
 const uint8_t CPU::getStatus() const
@@ -208,52 +208,52 @@ const char* CPU::getStatusBitString(STATUS_BIT status_bit)
 
 uint16_t CPU::getOperand(ADDRESS_MODE address_mode)
 {
-    if (m_MemoryMap)
+    if (m_MemoryMaps)
     {
         m_CyclesToProcess++;
 
         switch (address_mode)
         {
         case ADDRESS_MODE::IMMEDIATE:
-            return m_MemoryMap->get(m_PC++);
+            return m_MemoryMaps->get(m_PC++);
         case ADDRESS_MODE::ZERO_PAGE:
-            return m_MemoryMap->get(m_MemoryMap->get(m_PC++));
+            return m_MemoryMaps->get(m_MemoryMaps->get(m_PC++));
         case ADDRESS_MODE::ZERO_PAGE_X:
-            return m_MemoryMap->get(m_PC++) + m_RX;
+            return m_MemoryMaps->get(m_PC++) + m_RX;
         case ADDRESS_MODE::ABSOLUTE:
         {
-            uint16_t low = m_MemoryMap->get(m_PC++);
-            uint16_t high = m_MemoryMap->get(m_PC++);
-            return m_MemoryMap->get(low | (high << 8));
+            uint16_t low = m_MemoryMaps->get(m_PC++);
+            uint16_t high = m_MemoryMaps->get(m_PC++);
+            return m_MemoryMaps->get(low | (high << 8));
         }
         case ADDRESS_MODE::ABSOLUTE_X:
         {
-            uint16_t low = m_MemoryMap->get(m_PC++);
-            uint16_t high = m_MemoryMap->get(m_PC++);
+            uint16_t low = m_MemoryMaps->get(m_PC++);
+            uint16_t high = m_MemoryMaps->get(m_PC++);
             m_CyclesToProcess += (((low + m_RX) & 0xff00) ? 1 : 0);
-            return m_MemoryMap->get((low | (high << 8)) + m_RX);
+            return m_MemoryMaps->get((low | (high << 8)) + m_RX);
         }
         case ADDRESS_MODE::ABSOLUTE_Y:
         {
-            uint16_t low = m_MemoryMap->get(m_PC++);
-            uint16_t high = m_MemoryMap->get(m_PC++);
+            uint16_t low = m_MemoryMaps->get(m_PC++);
+            uint16_t high = m_MemoryMaps->get(m_PC++);
             m_CyclesToProcess += (((low + m_RY) & 0xff00) ? 1 : 0);
-            return m_MemoryMap->get((low | (high << 8)) + m_RY);
+            return m_MemoryMaps->get((low | (high << 8)) + m_RY);
         }
         case ADDRESS_MODE::INDIRECT_X:
         {
-            uint8_t zaddr = m_MemoryMap->get(m_PC++) + m_RX;
-            uint16_t low = m_MemoryMap->get(zaddr++);
-            uint16_t high = m_MemoryMap->get(zaddr);
-            return m_MemoryMap->get(low | (high << 8));
+            uint8_t zaddr = m_MemoryMaps->get(m_PC++) + m_RX;
+            uint16_t low = m_MemoryMaps->get(zaddr++);
+            uint16_t high = m_MemoryMaps->get(zaddr);
+            return m_MemoryMaps->get(low | (high << 8));
         }
         case ADDRESS_MODE::INDIRECT_Y:
         {
-            uint8_t zaddr = m_MemoryMap->get(m_PC++);
-            uint16_t low = m_MemoryMap->get(zaddr++);
-            uint16_t high = m_MemoryMap->get(zaddr);
+            uint8_t zaddr = m_MemoryMaps->get(m_PC++);
+            uint16_t low = m_MemoryMaps->get(zaddr++);
+            uint16_t high = m_MemoryMaps->get(zaddr);
             m_CyclesToProcess += (((low + m_RY) && 0xff00) ? 1 : 0);
-            return m_MemoryMap->get((low | (high << 8)) + m_RY);
+            return m_MemoryMaps->get((low | (high << 8)) + m_RY);
         }
         default:
             std::cout << "Error getting address, unhandled mode: " << address_mode << std::endl;

@@ -16,7 +16,7 @@ namespace NES
 
         Arch6502::CPU m_CPU;
         CPUClock6502 m_Clock;
-        MemoryMap* m_MemoryMap;
+        MemoryMap* m_MemoryMaps;
 
         void on();
         void off();

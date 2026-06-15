@@ -1,40 +1,30 @@
 #ifndef MEMORYMAP_H
 #define MEMORYMAP_H
 
-#include <cstdlib>
-#include <vector>
-#include <memory>
-#include <string>
+#include "memorybank.h"
 
-class MemoryMap
+class SubMemoryMap;
+
+class MemoryMap: public MemoryBank
 {
 
 public:
     MemoryMap(std::size_t init_size);
     ~MemoryMap();
 
-    const std::size_t size() const;
+    bool addMirror(std::size_t source_addr, std::size_t dest_addr, std::size_t len);
 
     const uint8_t get(std::size_t addr, bool* ok = nullptr) const;
     bool set(std::size_t addr, const uint8_t val);
 
-    void fill(const uint8_t val);
-    void fillRandom();
+    // Sub-Banks
+    SubMemoryMap* addSubMap(std::size_t offset, std::size_t len);
+    std::size_t getSubMaps() const;
+    SubMemoryMap* getSubMap(unsigned int index);
 
-    // Memory Mirroring
-    bool addMirror(std::size_t source_addr, std::size_t dest_addr, std::size_t len);
+protected:
 
-    // Banks
-    void addBank();
-    bool deleteBank();
-    std::size_t getBanks() const;
-    bool selectBank(unsigned int index);
-    unsigned int selectedBank() const;
-
-private:
-    std::size_t m_MemorySize;
-    std::vector<std::vector<std::shared_ptr<uint8_t> > > m_MemoryMap;
-    unsigned int m_SelectedBank;
+    std::vector<SubMemoryMap*> m_SubMemoryMaps;
 };
 
 #endif

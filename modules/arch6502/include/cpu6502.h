@@ -65,7 +65,7 @@ namespace Arch6502
         uint8_t m_Status;
 
         // Memory
-        MemoryMap* m_MemoryMap;
+        MemoryMap* m_MemoryMaps;
     };
 }
 

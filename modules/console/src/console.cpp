@@ -271,7 +271,7 @@ void Console::doJohn(std::vector<std::string> args)
 
 void Console::doMemShow(std::vector<std::string> args)
 {
-    MemoryMap* mem = nes->m_MemoryMap;
+    MemoryMap* mem = nes->m_MemoryMaps;
     std::cout << "Memory" << std::endl;
     std::cout << "======" << std::endl;
     if (mem)
@@ -288,20 +288,20 @@ void Console::doMemShow(std::vector<std::string> args)
 
 void Console::doMemRead(std::vector<std::string> args)
 {
-    uint16_t offset = uint16_t(Tools::toInt(args[0]));
-    uint16_t len = uint16_t(Tools::toInt(args[1]));
+    std::size_t offset = uint16_t(Tools::toInt(args[0]));
+    std::size_t len = uint16_t(Tools::toInt(args[1]));
 
     std::cout << "Dumping memory @ 0x" << std::hex << std::setw(4) << std::setfill('0') << offset << ", len " << std::dec << len << std::endl;
 
-    if (offset + len > nes->m_MemoryMap->size())
+    if ( (offset + len) > nes->m_MemoryMaps->size())
     {
-        std::cout << "Range out of bounds ( > " << nes->m_MemoryMap->size() << ")" << std::endl;
+        std::cout << "Range out of bounds ( > " << nes->m_MemoryMaps->size() << ")" << std::endl;
         return;
     }
 
     // Calculate display range
-    uint16_t display_start = offset - (offset % 16);
-    uint16_t display_end = (offset + len);
+    std::size_t display_start = offset - (offset % 16);
+    std::size_t display_end = (offset + len);
     if (display_end % 16)
     {
         display_end += 16 - display_end % 16;
@@ -336,7 +336,7 @@ void Console::doMemRead(std::vector<std::string> args)
 
         if (i >= offset && i < offset + len)
         {
-            std::cout << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_MemoryMap->get(i, false)) << " ";
+            std::cout << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_MemoryMaps->get(i, false)) << " ";
         }
         else
         {
@@ -348,14 +348,14 @@ void Console::doMemRead(std::vector<std::string> args)
 
 void Console::doMemWrite(std::vector<std::string> args)
 {
-    uint16_t offset = uint16_t(Tools::toInt(args[0]));
+    std::size_t offset = std::size_t(Tools::toInt(args[0]));
     // convert args to data
     std::size_t byte_count = args.size();
 
     // Out-Of-Bounds?
-    if (offset + byte_count > nes->m_MemoryMap->size())
+    if ( (offset + byte_count) > nes->m_MemoryMaps->size())
     {
-        std::cout << "Offset out of bounds ( > " << nes->m_MemoryMap->size() << ")" << std::endl;
+        std::cout << "Offset out of bounds ( > " << nes->m_MemoryMaps->size() << ")" << std::endl;
         return;
     }
     // Write each byte to memory
@@ -363,8 +363,8 @@ void Console::doMemWrite(std::vector<std::string> args)
     {
         std::size_t bpos = offset + i - 1;
         //uint8_t* bp = &m_CPU->m_Mem.get(bpos);
-        nes->m_MemoryMap->set(bpos, uint8_t(Tools::toInt(args[i])));
-        std::cout << "Wrote " << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_MemoryMap->get(bpos, false));
+        nes->m_MemoryMaps->set(bpos, uint8_t(Tools::toInt(args[i])));
+        std::cout << "Wrote " << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_MemoryMaps->get(bpos, false));
         std::cout << " @ 0x" << std::hex << std::setw(4) << std::setfill('0') << bpos << std::endl;
     }
 }
@@ -375,13 +375,13 @@ void Console::doMemSave(std::vector<std::string> args)
     std::ofstream file(filename, std::ios::out | std::ios::binary);
     if (file.is_open())
     {
-        for (auto i = 0; i < nes->m_MemoryMap->size(); i++)
+        for (auto i = 0; i < nes->m_MemoryMaps->size(); i++)
         {
-            file.put(nes->m_MemoryMap->get(i, false));
+            file.put(nes->m_MemoryMaps->get(i, false));
         }
         file.flush();
         file.close();
-        std::cout << "Wrote " << nes->m_MemoryMap->size() << " bytes to " << filename << std::endl;
+        std::cout << "Wrote " << nes->m_MemoryMaps->size() << " bytes to " << filename << std::endl;
     }
     else
     {
@@ -392,13 +392,13 @@ void Console::doMemSave(std::vector<std::string> args)
 void Console::doMemFill(std::vector<std::string> args)
 {
     uint8_t val = Tools::toInt(args[0]);
-    nes->m_MemoryMap->fill(val);
+    nes->m_MemoryMaps->fill(val);
     std::cout << "Memory filled with 0x" << std::hex << std::setw(2) << std::setfill('0') << int(val) << std::endl;
 }
 
 void Console::doMemFillRand(std::vector<std::string> args)
 {
-    nes->m_MemoryMap->fillRandom();
+    nes->m_MemoryMaps->fillRandom();
     std::cout << "Memory filled with random values." << std::endl;
 }
 
@@ -447,7 +447,7 @@ void Console::doCPUExecute(std::vector<std::string> args)
     for (auto i = 0; i < count; i++)
     {
         uint16_t addr = nes->m_CPU.getPC();
-        uint8_t opcode = nes->m_MemoryMap->get(nes->m_CPU.getPC(), false);
+        uint8_t opcode = nes->m_MemoryMaps->get(nes->m_CPU.getPC(), false);
         int cycles = nes->m_CPU.execute();
 
         std::cout << "Executed CPU Instruction 0x" << std::hex << std::setw(2) << std::setfill('0') << int(opcode);
@@ -570,7 +570,7 @@ void Console::doNESShow(std::vector<std::string> args)
     std::cout << "---" << std::endl;
     std::cout << "NES_CLOCK_HZ: " << NES_CLOCK_HZ << " Hz" << std::endl;
     std::cout << "On..........: " << Tools::getYesNo(nes->isOn()) << std::endl;
-    std::cout << "Memory Size.: " << nes->m_MemoryMap->size() << std::endl;
+    std::cout << "Memory Size.: " << nes->m_MemoryMaps->size() << std::endl;
     std::cout << "NMI Vector..: ";
     std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << NES_NMI_ADDR << " => ";
     std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->getNMIVector()) << std::endl;
