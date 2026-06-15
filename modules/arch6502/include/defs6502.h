@@ -6,6 +6,7 @@ namespace Arch6502
     enum ADDRESS_MODE
     {
         IMPLIED,
+        RELATIVE,
         IMMEDIATE,
         ZERO_PAGE,
         ZERO_PAGE_X,
@@ -21,14 +22,14 @@ namespace Arch6502
 
     enum STATUS_BIT
     {
-        S_CARRY,
-        S_ZERO,
-        S_INTERRUPT,
-        S_DECIMAL,
-        S_BREAK,
-        S_UNUSED,
-        S_OVERFLOW,
-        S_NEGATIVE
+        STATUS_CARRY,
+        STATUS_ZERO,
+        STATUS_INTERRUPT,
+        STATUS_DECIMAL,
+        STATUS_BREAK,
+        STATUS_UNUSED,
+        STATUS_OVERFLOW,
+        STATUS_NEGATIVE
     };
 }
 

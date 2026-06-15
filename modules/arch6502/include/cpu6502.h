@@ -33,7 +33,6 @@ namespace Arch6502
         uint8_t popStack();
         void resetStack();
 
-
         // Program Counter
         const uint16_t getPC() const;
         void setPC(const uint16_t pc);
@@ -41,12 +40,7 @@ namespace Arch6502
         void setPCH(const uint8_t pch); // Set PC High Byte
 
         // Memory
-        bool setAddr(uint16_t addr, uint8_t val, bool inc_cycles = true);
-        uint8_t getAddr(uint16_t addr, bool inc_cycles = true, bool* ok = nullptr);
-        bool addMirror(std::size_t source_addr, std::size_t dest_addr, std::size_t len);
-        const std::size_t getMemSize() const;
-        void fillMem(const uint8_t val);
-        void fillMemRandom();
+        void setMemoryMap(MemoryMap* mem);
 
         // Status
         const uint8_t getStatus() const;
@@ -56,7 +50,6 @@ namespace Arch6502
 
         // OpCodes
         uint16_t getOperand(ADDRESS_MODE address_mode);
-
 
     private:
 
@@ -71,7 +64,7 @@ namespace Arch6502
         uint8_t m_Status;
 
         // Memory
-        MemoryMap m_Mem;
+        MemoryMap* m_Mem;
     };
 }
 

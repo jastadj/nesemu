@@ -225,11 +225,3 @@ NES::TIMING_MODE NES::Cart::getTimingMode() const
     return TIMING_MODE::NTSC;
 }
 
-uint16_t NES::Cart::getResetVector() const
-{
-    if (format == FORMAT::INES || format == FORMAT::INES2)
-    {
-        return uint16_t(data[16 + getPRGROMSize() - 4]) | (uint16_t(data[16 + getPRGROMSize() - 3]) << 8);
-    }
-    return 0;
-}

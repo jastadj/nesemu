@@ -29,8 +29,6 @@ namespace NES
         FORMAT format;
         std::size_t getHeaderSize() const;
 
-
-
         std::size_t getPRGROMSize() const;
         std::size_t getCHRROMSize() const;
 
@@ -44,7 +42,6 @@ namespace NES
         uint8_t getSubMapper() const;
         CONSOLE_TYPE getConsoleType() const;
         TIMING_MODE getTimingMode() const;
-        uint16_t getResetVector() const;
 
         // Flags
         bool isNametableHorizontallyArranged() const;

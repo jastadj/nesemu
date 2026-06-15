@@ -4,9 +4,11 @@
 #include <cstdlib>
 #include <vector>
 #include <memory>
+#include <string>
 
 class MemoryMap
 {
+
 public:
     MemoryMap(std::size_t init_size);
     ~MemoryMap();
@@ -19,11 +21,11 @@ public:
     void fill(const uint8_t val);
     void fillRandom();
 
+    // Memory Mirroring
     bool addMirror(std::size_t source_addr, std::size_t dest_addr, std::size_t len);
 
 private:
-    std::vector<std::shared_ptr<uint8_t> > m_Bank;
-    
+    std::vector<std::shared_ptr<uint8_t> > m_Mem;
 };
 
 #endif

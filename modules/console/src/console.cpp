@@ -248,11 +248,20 @@ void Console::doLS(std::vector<std::string> args)
 
 void Console::doJohn(std::vector<std::string> args)
 {
-    //m_Instance->parseCommand("mem write 0x00 0xb6 0x01 0xb4 0x02 0xa9 0x03");
-    m_Instance->parseCommand("mem write 0x00 0xa9 0x05");
-    m_Instance->parseCommand("cpu execute 3");
-    m_Instance->parseCommand("cpu show");
-    m_Instance->parseCommand("mem read 0 32");
+    if (false)
+    {
+        
+
+    }
+    else
+    {
+        //m_Instance->parseCommand("mem write 0x00 0xb6 0x01 0xb4 0x02 0xa9 0x03");
+        m_Instance->parseCommand("mem write 0x00 0xa9 0x05");
+        m_Instance->parseCommand("cpu execute 3");
+        m_Instance->parseCommand("cpu show");
+        m_Instance->parseCommand("mem read 0 32");
+    }
+
 }
 
 
@@ -266,9 +275,9 @@ void Console::doMemRead(std::vector<std::string> args)
 
     std::cout << "Dumping memory @ 0x" << std::hex << std::setw(4) << std::setfill('0') << offset << ", len " << std::dec << len << std::endl;
 
-    if (offset + len > nes->m_CPU.getMemSize())
+    if (offset + len > nes->m_MemoryMap->size())
     {
-        std::cout << "Range out of bounds ( > " << nes->m_CPU.getMemSize() << ")" << std::endl;
+        std::cout << "Range out of bounds ( > " << nes->m_MemoryMap->size() << ")" << std::endl;
         return;
     }
 
@@ -309,7 +318,7 @@ void Console::doMemRead(std::vector<std::string> args)
 
         if (i >= offset && i < offset + len)
         {
-            std::cout << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getAddr(i, false)) << " ";
+            std::cout << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_MemoryMap->get(i, false)) << " ";
         }
         else
         {
@@ -326,9 +335,9 @@ void Console::doMemWrite(std::vector<std::string> args)
     std::size_t byte_count = args.size();
 
     // Out-Of-Bounds?
-    if (offset + byte_count > nes->m_CPU.getMemSize())
+    if (offset + byte_count > nes->m_MemoryMap->size())
     {
-        std::cout << "Offset out of bounds ( > " << nes->m_CPU.getMemSize() << ")" << std::endl;
+        std::cout << "Offset out of bounds ( > " << nes->m_MemoryMap->size() << ")" << std::endl;
         return;
     }
     // Write each byte to memory
@@ -336,8 +345,8 @@ void Console::doMemWrite(std::vector<std::string> args)
     {
         std::size_t bpos = offset + i - 1;
         //uint8_t* bp = &m_CPU->m_Mem.get(bpos);
-        nes->m_CPU.setAddr(bpos, uint8_t(Tools::toInt(args[i])), false);
-        std::cout << "Wrote " << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getAddr(bpos, false));
+        nes->m_MemoryMap->set(bpos, uint8_t(Tools::toInt(args[i])));
+        std::cout << "Wrote " << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_MemoryMap->get(bpos, false));
         std::cout << " @ 0x" << std::hex << std::setw(4) << std::setfill('0') << bpos << std::endl;
     }
 }
@@ -348,13 +357,13 @@ void Console::doMemSave(std::vector<std::string> args)
     std::ofstream file(filename, std::ios::out | std::ios::binary);
     if (file.is_open())
     {
-        for (auto i = 0; i < nes->m_CPU.getMemSize(); i++)
+        for (auto i = 0; i < nes->m_MemoryMap->size(); i++)
         {
-            file.put(nes->m_CPU.getAddr(i, false));
+            file.put(nes->m_MemoryMap->get(i, false));
         }
         file.flush();
         file.close();
-        std::cout << "Wrote " << nes->m_CPU.getMemSize() << " bytes to " << filename << std::endl;
+        std::cout << "Wrote " << nes->m_MemoryMap->size() << " bytes to " << filename << std::endl;
     }
     else
     {
@@ -365,13 +374,13 @@ void Console::doMemSave(std::vector<std::string> args)
 void Console::doMemFill(std::vector<std::string> args)
 {
     uint8_t val = Tools::toInt(args[0]);
-    nes->m_CPU.fillMem(val);
+    nes->m_MemoryMap->fill(val);
     std::cout << "Memory filled with 0x" << std::hex << std::setw(2) << std::setfill('0') << int(val) << std::endl;
 }
 
 void Console::doMemFillRand(std::vector<std::string> args)
 {
-    nes->m_CPU.fillMemRandom();
+    nes->m_MemoryMap->fillRandom();
     std::cout << "Memory filled with random values." << std::endl;
 }
 
@@ -390,8 +399,11 @@ void Console::doCPUShow(std::vector<std::string> args)
     std::cout << "Cycles/Batch: " << nes->m_Clock.getCyclesPerBatch() << std::endl;
     std::cout << "Running: " << Tools::getYesNo(nes->m_Clock.isRunning()) << std::endl;
     std::cout << "Ticks: " << nes->m_Clock.getTicks() << std::endl;
-    std::cout << "Memory Size: " << nes->m_CPU.getMemSize() << std::endl;
-    std::cout << "Registers:" << std::endl;
+    std::cout << "Memory" << std::endl;
+    std::cout << "------" << std::endl;
+    std::cout << "  Memory Size.: " << nes->m_MemoryMap->size() << std::endl;
+    std::cout << "Registers" << std::endl;
+    std::cout << "---------" << std::endl;
     std::cout << "      PC: 0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->m_CPU.getPC()) << std::endl;
     std::cout << "   Stack: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getStackPtr()) << std::endl;
     std::cout << "     ACC: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getAcc()) << std::endl;
@@ -419,7 +431,7 @@ void Console::doCPUExecute(std::vector<std::string> args)
     for (auto i = 0; i < count; i++)
     {
         uint16_t addr = nes->m_CPU.getPC();
-        uint8_t opcode = nes->m_CPU.getAddr(nes->m_CPU.getPC(), false);
+        uint8_t opcode = nes->m_MemoryMap->get(nes->m_CPU.getPC(), false);
         int cycles = nes->m_CPU.execute();
 
         std::cout << "Executed CPU Instruction 0x" << std::hex << std::setw(2) << std::setfill('0') << int(opcode);
@@ -472,22 +484,25 @@ void Console::doCPUShowOpcodes(std::vector<std::string> args)
         if (opfunc != nullptr)
         {
             // Get the addressing modes supported by the op function
-            std::map<ADDRESS_MODE, uint8_t> addrmodes = opfunc->getModeMap();
-            // Find the registered address mode for current opcode
+            std::vector<Arch6502::OpCodes::OpFunc::OpCodeInfo> opcodeinfos = opfunc->getOpCodeInfos();
             ADDRESS_MODE opcodemode = Arch6502::OpCodes::LUT::modes[opcode];
-            // If everything lines up (the opfunc's address mode's opcode == opcode)
-            if (addrmodes.count(opcodemode) && opcode == addrmodes[opcodemode])
+            // Find the registered address mode for current opcode
+            for (auto& opcodeinfo : opcodeinfos)
             {
-                std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << opcode << " ";
-                std::cout << opfunc->getMnemonic() << " - ";
-                std::cout << std::setw(12) << std::setfill(' ') << Arch6502::getAddressModeString(opcodemode) << " - ";
-                std::cout << "\"" << opfunc->getDescription() << "\"" << std::endl;
-            }
-            else
-            {
-                std::cerr << "OPCODE ERROR: 0x" << std::hex << std::setw(2) << std::setfill('0') << opcode << " ";
-                std::cerr << Arch6502::getAddressModeString(opcodemode) << " not found but expected." << std::endl;
-                errors = true;
+                // If everything lines up (the opfunc's address mode's opcode == opcode)
+                if (opcodeinfo.mode == opcodemode && opcode == opcodeinfo.code)
+                {
+                    std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << opcode << " ";
+                    std::cout << opfunc->getMnemonic() << " - ";
+                    std::cout << std::setw(12) << std::setfill(' ') << Arch6502::getAddressModeString(opcodemode) << " - ";
+                    std::cout << "\"" << opfunc->getDescription() << "\"" << std::endl;
+                }
+                else
+                {
+                    std::cerr << "OPCODE ERROR: 0x" << std::hex << std::setw(2) << std::setfill('0') << opcode << " ";
+                    std::cerr << Arch6502::getAddressModeString(opcodemode) << " not found but expected." << std::endl;
+                    errors = true;
+                }
             }
         }
 
@@ -528,55 +543,72 @@ void Console::doNESOff(std::vector<std::string> args)
 
 void Console::doNESReset(std::vector<std::string> args)
 {
-    std::cout << "Resetting NES to 0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->m_ResetVector) << std::endl;
+    std::cout << "Resetting NES to 0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->getResetVector()) << std::endl;
     nes->reset();
 }
 
 void Console::doNESShow(std::vector<std::string> args)
 {
+    const NES::Cart* cart = nes->getCart();
     std::cout << "NES" << std::endl;
     std::cout << "---" << std::endl;
     std::cout << "NES_CLOCK_HZ: " << NES_CLOCK_HZ << " Hz" << std::endl;
     std::cout << "On..........: " << Tools::getYesNo(nes->isOn()) << std::endl;
-    std::cout << "Reset Vector: 0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->m_ResetVector) << std::endl;
+    std::cout << "Memory Size.: " << nes->m_MemoryMap->size() << std::endl;
+    std::cout << "NMI Vector..: ";
+    std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << NES_NMI_ADDR << " => ";
+    std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->getNMIVector()) << std::endl;
+    std::cout << "Reset Vector: ";
+    std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << NES_RES_ADDR << " => ";
+    std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->getResetVector()) << std::endl;
+    std::cout << "IRQ Vector..: ";
+    std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << NES_IRQ_ADDR << " => ";
+    std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->getIRQVector()) << std::endl;
+    std::cout << "Cart: " << Tools::getYesNo(cart != nullptr) << " ";
+    if (cart)
+    {
+        std::cout << "\"" << cart->filename << "\"";
+    }
+    std::cout << std::endl;
 }
 
 void Console::doNESLoad(std::vector<std::string> args)
 {
-    NES::Cart cart(args[0]);
-    if (cart.data)
+    NES::Cart* cart = new NES::Cart(args[0]);
+    if (cart->data && nes->loadCart(cart))
     {
         std::cout << "Cart:" << std::endl;
-        std::cout << "  Filename....: \"" << cart.filename << "\"" << std::endl;
-        std::cout << "  Format......: " << NES::Cart::getFormatString(cart.format) << std::endl;
-        std::cout << "  Size........: " << cart.data_size << std::endl;
-        std::cout << "  Mapper......: " << int(cart.getMapper()) << std::endl;
-        std::cout << "  SubMapper...: " << int(cart.getSubMapper()) << std::endl;
-        std::cout << "  Console.....: " << NES::getConsoleTypeString(cart.getConsoleType()) << std::endl;
-        std::cout << "  Timing Mode.: " << NES::getTimingModeString(cart.getTimingMode()) << std::endl;
-        std::cout << "  Reset Vector: " << std::hex << std::setw(2) << std::setfill('0') << int(cart.getResetVector()) << std::endl;
+        std::cout << "  Filename....: \"" << cart->filename << "\"" << std::endl;
+        std::cout << "  Format......: " << NES::Cart::getFormatString(cart->format) << std::endl;
+        std::cout << "  Size........: " << cart->data_size << std::endl;
+        std::cout << "  Mapper......: " << int(cart->getMapper()) << std::endl;
+        std::cout << "  SubMapper...: " << int(cart->getSubMapper()) << std::endl;
+        std::cout << "  Console.....: " << NES::getConsoleTypeString(cart->getConsoleType()) << std::endl;
+        std::cout << "  Timing Mode.: " << NES::getTimingModeString(cart->getTimingMode()) << std::endl;
         std::cout << "  Header......: ";
         for (int i = 0; i < 16; i++)
         {
-            std::cout << std::hex << std::setw(2) << std::setfill('0') << int(cart.data[i]) << " ";
+            std::cout << std::hex << std::setw(2) << std::setfill('0') << int(cart->data[i]) << " ";
         }
         std::cout << std::endl;
         std::cout << std::dec << std::setw(0);
-        std::cout << "  PRG-ROM Size: " << cart.getPRGROMSize() << std::endl;
-        std::cout << "  CHR-ROM Size: " << cart.getCHRROMSize() << std::endl;
+        std::cout << "  PRG-ROM Size: " << cart->getPRGROMSize() << " Banks: " << cart->getPRGROMSize() / (1024*16) << std::endl;
+        std::cout << "  CHR-ROM Size: " << cart->getCHRROMSize() << std::endl;
         std::cout << "  RAM:" << std::endl;
-        std::cout << "    Battery-backed/NV Ram: " << cart.hasNVRam() << std::endl;
-        std::cout << "    PRG-RAM Size.........: " << cart.getPRGRAMSize() << std::endl;
-        std::cout << "    CHR-RAM Size.........: " << cart.getCHRRAMSize() << std::endl;
-        std::cout << "    PRG-NVRAM Size..: " << cart.getPRGNVRAMSize() << std::endl;
-        std::cout << "    CHR-NVRAM Size..: " << cart.getCHRNVRAMSize() << std::endl;
+        std::cout << "    Battery-backed/NV Ram: " << cart->hasNVRam() << std::endl;
+        std::cout << "    PRG-RAM Size.........: " << cart->getPRGRAMSize() << std::endl;
+        std::cout << "    CHR-RAM Size.........: " << cart->getCHRRAMSize() << std::endl;
+        std::cout << "    PRG-NVRAM Size.......: " << cart->getPRGNVRAMSize() << std::endl;
+        std::cout << "    CHR-NVRAM Size.......: " << cart->getCHRNVRAMSize() << std::endl;
         std::cout << "  Flags:" << std::endl;
-        std::cout << "    Nametable Horizontally Arranged: " << cart.isNametableHorizontallyArranged() << std::endl;
-        std::cout << "    Trainer........................: " << cart.hasTrainer() << std::endl;
-        std::cout << "    Alternative Nametable Layout...: " << cart.hasAlternativeNametableLayout() << std::endl;
+        std::cout << "    Nametable Horizontally Arranged: " << cart->isNametableHorizontallyArranged() << std::endl;
+        std::cout << "    Trainer........................: " << cart->hasTrainer() << std::endl;
+        std::cout << "    Alternative Nametable Layout...: " << cart->hasAlternativeNametableLayout() << std::endl;
+        std::cout << "Successfully loaded \"" << cart->filename << "\"" << std::endl;
     }
     else
     {
         std::cout << "Failed to load \"" << args[0] << "\"" << std::endl;
+        delete cart;
     }
 }

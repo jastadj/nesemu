@@ -5,6 +5,10 @@
 // PAL  1.662607 MHz (~601 ns per cycle)
 #define NES_CLOCK_HZ 1789773
 
+#define NES_NMI_ADDR 0xfffa
+#define NES_RES_ADDR 0xfffc
+#define NES_IRQ_ADDR 0xfffe
+
 namespace NES
 {
     enum TIMING_MODE

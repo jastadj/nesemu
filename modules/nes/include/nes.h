@@ -6,24 +6,36 @@
 
 namespace NES
 {
+    class Cart;
+
     class Console
     {
     public:
         Console();
         ~Console();
 
+        Arch6502::CPU m_CPU;
+        CPUClock6502 m_Clock;
+        MemoryMap* m_MemoryMap;
+
         void on();
         void off();
         void reset();
         bool isOn();
 
-        Arch6502::CPU m_CPU;
-        CPUClock6502 m_Clock;
-        uint16_t m_ResetVector;
+        bool loadCart(Cart* cart);
+        bool unloadCart();
+        const Cart* getCart();
+
+        uint16_t getNMIVector();
+        uint16_t getResetVector();
+        uint16_t getIRQVector();
 
     private:
         unsigned int m_WaitCycles;
         void onTick();
+
+        Cart* m_Cart;
     };
 }
 #endif

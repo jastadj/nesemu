@@ -93,8 +93,8 @@ bool ASM::assemble(std::string input_file, std::string output_file)
     std::cout << " (0x" << std::hex << rom_data.size() << ")" << std::dec << std::endl;
 
     // Set Reset Vector
-    rom_data[0x8000 - 4] = 0x00;
-    rom_data[0x8000 - 3] = 0x80;
+    rom_data[0x4000 - 4] = 0x00;
+    rom_data[0x4000 - 3] = 0x80;
 
 
     // Write Header Data
@@ -122,27 +122,43 @@ std::vector<uint8_t> ASM::getBytes(std::string asm_line)
     asm_line = Tools::toLower(asm_line);
 
     std::vector<std::string> strings = Tools::split(asm_line);
-    ADDRESS_MODE mode = ADDRESS_MODE::IMPLIED;
 
     std::string op_str = strings[0];
     strings.erase(strings.begin());
     std::vector<std::string> operand_strings = strings;
-        
+
     // Parse Op and Operand strings into bytes
     OpCodes::OpFunc* opfunc = OpCodes::LUT::getOpFuncByMnemonic(op_str);
     if (opfunc)
     {
-        std::map<ADDRESS_MODE, uint8_t> modemap = opfunc->getModeMap();
-        if (modemap.count(mode))
+        std::vector<OpCodes::OpFunc::OpCodeInfo> opcodeinfos = opfunc->getOpCodeInfos();
+
+        if (!opcodeinfos.empty())
         {
-            // Operand Byte
-            data.push_back(modemap[mode]);
-            // Operand Bytes
-            for (auto operand_str : operand_strings)
+            // Implied Only - No operands
+            if (opcodeinfos.size() == 1 && opcodeinfos[0].mode == ADDRESS_MODE::IMPLIED)
             {
-                for (auto& b : parseOperand(operand_str, mode))
+                data.push_back(opcodeinfos[0].code);
+            }
+            else
+            {
+                // Parse each operand string
+                for (auto operand_str : operand_strings)
                 {
-                    data.push_back(b);
+                    ADDRESS_MODE mode = ADDRESS_MODE::IMPLIED;
+                    std::vector<uint16_t> operand_bytes = parseOperand(operand_str, mode);
+                    for (auto& opcodeinfo : opcodeinfos)
+                    {
+                        if (opcodeinfo.mode == mode)
+                        {
+                            // Operand Byte
+                            data.push_back(opcodeinfo.code);
+                            for (auto& b : operand_bytes)
+                            {
+                                data.push_back(b);
+                            }
+                        }
+                    }
                 }
             }
         }
