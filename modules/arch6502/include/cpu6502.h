@@ -41,6 +41,7 @@ namespace Arch6502
 
         // Memory
         void setMemoryMap(MemoryMap* mem);
+        bool hasMemoryMap() const;
 
         // Status
         const uint8_t getStatus() const;
@@ -64,7 +65,7 @@ namespace Arch6502
         uint8_t m_Status;
 
         // Memory
-        MemoryMap* m_Mem;
+        MemoryMap* m_MemoryMap;
     };
 }
 

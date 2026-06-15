@@ -3,33 +3,32 @@
 // Debug
 #include <iostream>
 
-MemoryMap::MemoryMap(std::size_t init_size)
+MemoryMap::MemoryMap(std::size_t init_size):
+    m_MemorySize(init_size),
+    m_SelectedBank(0)
 {
-    for (auto i = 0; i < init_size; i++)
-    {
-        m_Mem.emplace_back(std::make_shared<uint8_t>());
-    }
+    addBank();
 }
 
 MemoryMap::~MemoryMap()
 {
-    m_Mem.clear();
+    m_MemoryMap.clear();
 }
 
 const std::size_t MemoryMap::size() const
 {
-    return m_Mem.size();
+    return m_MemorySize;
 }
 
 const uint8_t MemoryMap::get(std::size_t addr, bool* ok) const
 {
-    if (addr < m_Mem.size())
+    if (addr < m_MemorySize)
     {
         if (ok != nullptr)
         {
             *ok = true;
         }
-        return *m_Mem[addr];
+        return *m_MemoryMap[m_SelectedBank][addr];
     }
     if (ok != nullptr)
     {
@@ -40,9 +39,9 @@ const uint8_t MemoryMap::get(std::size_t addr, bool* ok) const
 
 bool MemoryMap::set(std::size_t addr, const uint8_t val)
 {
-    if (addr < m_Mem.size())
+    if (addr < m_MemoryMap.size())
     {
-        *m_Mem[addr] = val;
+        *m_MemoryMap[m_SelectedBank][addr] = val;
         return true;
     }
     return false;
@@ -50,7 +49,7 @@ bool MemoryMap::set(std::size_t addr, const uint8_t val)
 
 void MemoryMap::fill(const uint8_t val)
 {
-    for (auto i = 0; i < m_Mem.size(); i++)
+    for (auto i = 0; i < m_MemoryMap.size(); i++)
     {
         set(i, val);
     }
@@ -58,7 +57,7 @@ void MemoryMap::fill(const uint8_t val)
 
 void MemoryMap::fillRandom()
 {
-    for (auto i = 0; i < m_Mem.size(); i++)
+    for (auto i = 0; i < m_MemoryMap.size(); i++)
     {
         set(i, rand() % 256);
     }
@@ -66,7 +65,7 @@ void MemoryMap::fillRandom()
 
 bool MemoryMap::addMirror(std::size_t source_addr, std::size_t dest_addr, std::size_t len)
 {
-    if ((source_addr + len > m_Mem.size()) || (dest_addr + len > m_Mem.size()))
+    if ((source_addr + len > m_MemoryMap.size()) || (dest_addr + len > m_MemoryMap.size()))
     {
         return false;
     }
@@ -74,7 +73,49 @@ bool MemoryMap::addMirror(std::size_t source_addr, std::size_t dest_addr, std::s
     // Delete destination map and replace with source pointer
     for (auto i = 0; i < len; i++)
     {
-        m_Mem[dest_addr + i] = m_Mem[source_addr + i];
+        m_MemoryMap[dest_addr + i] = m_MemoryMap[source_addr + i];
     }
     return true;
+}
+
+// Banks
+
+void MemoryMap::addBank()
+{
+    std::vector< std::shared_ptr<uint8_t> > bank;
+    for (auto i = 0; i < size(); i++)
+    {
+        bank.emplace_back(std::make_shared<uint8_t>());
+    }
+    m_MemoryMap.push_back(bank);
+}
+
+bool MemoryMap::deleteBank()
+{
+    if (getBanks() > 1)
+    {
+        m_MemoryMap.pop_back();
+        return true;
+    }
+    return false;
+}
+
+std::size_t MemoryMap::getBanks() const
+{
+    return m_MemoryMap.size();
+}
+
+bool MemoryMap::selectBank(unsigned int index)
+{
+    if (index < getBanks())
+    {
+        m_SelectedBank = index;
+        return true;
+    }
+    return false;
+}
+
+unsigned int MemoryMap::selectedBank() const
+{
+    return m_SelectedBank;
 }

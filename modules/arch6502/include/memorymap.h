@@ -24,8 +24,17 @@ public:
     // Memory Mirroring
     bool addMirror(std::size_t source_addr, std::size_t dest_addr, std::size_t len);
 
+    // Banks
+    void addBank();
+    bool deleteBank();
+    std::size_t getBanks() const;
+    bool selectBank(unsigned int index);
+    unsigned int selectedBank() const;
+
 private:
-    std::vector<std::shared_ptr<uint8_t> > m_Mem;
+    std::size_t m_MemorySize;
+    std::vector<std::vector<std::shared_ptr<uint8_t> > > m_MemoryMap;
+    unsigned int m_SelectedBank;
 };
 
 #endif

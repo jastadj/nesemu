@@ -69,6 +69,7 @@ private:
     static void doJohn(std::vector<std::string> args);
 
     // Memory
+    static void doMemShow(std::vector<std::string> args);
     static void doMemRead(std::vector<std::string> args);
     static void doMemWrite(std::vector<std::string> args);
     static void doMemSave(std::vector<std::string> args);

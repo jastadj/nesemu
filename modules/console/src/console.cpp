@@ -31,6 +31,7 @@ Console::Console():
     m_Commands.emplace_back(Command("john", "Run a john test", Console::doJohn, 0, -1));
     
     m_Commands.emplace_back(Command("mem", "Memory commands"));
+    m_Commands.back().sub_commands.emplace_back(Command("show", "Show Memory info", doMemShow));
     m_Commands.back().sub_commands.emplace_back(Command("read", "Read memory (usage: read <offset> <len>)", doMemRead, 2, 2));
     m_Commands.back().sub_commands.emplace_back(Command("write", "Write memory (usage: write <offset> <b0> <b1> <bn...>)", doMemWrite, 2, -1));
     m_Commands.back().sub_commands.emplace_back(Command("save", "Save memory to file (usage: save <filepath>)", doMemSave, 1, 1));
@@ -268,6 +269,23 @@ void Console::doJohn(std::vector<std::string> args)
 //////////////////
 // MEMORY COMMANDS
 
+void Console::doMemShow(std::vector<std::string> args)
+{
+    MemoryMap* mem = nes->m_MemoryMap;
+    std::cout << "Memory" << std::endl;
+    std::cout << "======" << std::endl;
+    if (mem)
+    {
+        std::cout << "Size: " << mem->size() << std::endl;
+        std::cout << "Banks: " << mem->getBanks() << std::endl;
+        std::cout << "Selected Bank: " << mem->selectedBank() << std::endl;
+    }
+    else
+    {
+        std::cout << "Error - no memory map!" << std::endl;
+    }
+}
+
 void Console::doMemRead(std::vector<std::string> args)
 {
     uint16_t offset = uint16_t(Tools::toInt(args[0]));
@@ -392,16 +410,14 @@ void Console::doCPUShow(std::vector<std::string> args)
 {
     std::cout << "CPU" << std::endl;
     std::cout << "===" << std::endl;
-    std::cout << "Clock Speed: " << nes->m_Clock.getClockSpeed() << " Hz";
+    std::cout << "Clock Speed........: " << nes->m_Clock.getClockSpeed() << " Hz";
     std::cout << std::setprecision(4) << " (" << nes->m_Clock.getClockSpeed() * 1e-6 << " MHz)" << std::endl;
-    std::cout << "Cycle Speed: " << 1e9 / nes->m_Clock.getClockSpeed() << " ns" << std::endl;
+    std::cout << "Cycle Speed........: " << 1e9 / nes->m_Clock.getClockSpeed() << " ns" << std::endl;
     std::cout << "Process Batches/Sec: " << nes->m_Clock.getBatchesPerSec() << std::endl;
-    std::cout << "Cycles/Batch: " << nes->m_Clock.getCyclesPerBatch() << std::endl;
-    std::cout << "Running: " << Tools::getYesNo(nes->m_Clock.isRunning()) << std::endl;
-    std::cout << "Ticks: " << nes->m_Clock.getTicks() << std::endl;
-    std::cout << "Memory" << std::endl;
-    std::cout << "------" << std::endl;
-    std::cout << "  Memory Size.: " << nes->m_MemoryMap->size() << std::endl;
+    std::cout << "Cycles/Batch.......: " << nes->m_Clock.getCyclesPerBatch() << std::endl;
+    std::cout << "Memory Map Assigned: " << Tools::getYesNo(nes->m_CPU.hasMemoryMap()) << std::endl;
+    std::cout << "Running............: " << Tools::getYesNo(nes->m_Clock.isRunning()) << std::endl;
+    std::cout << "Ticks..............: " << nes->m_Clock.getTicks() << std::endl;
     std::cout << "Registers" << std::endl;
     std::cout << "---------" << std::endl;
     std::cout << "      PC: 0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->m_CPU.getPC()) << std::endl;
@@ -410,7 +426,7 @@ void Console::doCPUShow(std::vector<std::string> args)
     std::cout << "       X: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getX()) << std::endl;
     std::cout << "       Y: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getY()) << std::endl;
     std::cout << std::endl;
-    std::cout << " Status: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getStatus()) << std::endl;
+    std::cout << " Status............: 0x" << std::hex << std::setw(2) << std::setfill('0') << int(nes->m_CPU.getStatus()) << std::endl;
     for (int i = 0; i < 8; i++)
     {
         Arch6502::STATUS_BIT status_bit = Arch6502::STATUS_BIT(i);
