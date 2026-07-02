@@ -36,6 +36,7 @@ namespace NES
         void onTick();
 
         Cart* m_Cart;
+        SubMemoryMap* m_CartBank;
     };
 }
 #endif

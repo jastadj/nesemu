@@ -11,6 +11,7 @@
 #include "opcodes6502.h"
 #include "nesdefs.h"
 #include "cart.h"
+#include "submemorymap.h"
 
 // Statics
 Console* Console::m_Instance = nullptr;
@@ -54,6 +55,7 @@ Console::Console():
     m_Commands.back().sub_commands.emplace_back(Command("off", "Power Off NES", doNESOff));
     m_Commands.back().sub_commands.emplace_back(Command("reset", "Reset NES", doNESReset));
     m_Commands.back().sub_commands.emplace_back(Command("load", "Load ROM", doNESLoad, 1, 1));
+    m_Commands.back().sub_commands.emplace_back(Command("unload", "Unload ROM", doNESUnload, 0, 0));
 }
 
 Console::~Console()
@@ -279,6 +281,15 @@ void Console::doMemShow(std::vector<std::string> args)
         std::cout << "Size: " << mem->size() << std::endl;
         std::cout << "Banks: " << mem->getBanks() << std::endl;
         std::cout << "Selected Bank: " << mem->selectedBank() << std::endl;
+        std::cout << "SubMaps: " << mem->getSubMaps() << std::endl;
+        for (int i = 0; i < mem->getSubMaps(); i++)
+        {
+            SubMemoryMap* submap = mem->getSubMap(i);
+            std::cout << "    " << i << ": 0x" << std::hex << std::setw(4) << std::setfill('0') << submap->getOffset();
+            std::cout << ", size: " << std::dec << std::setw(0) << submap->size();
+            std::cout << ", bank: " << submap->selectedBank() << " (" << submap->selectedBank()+1 << "/" << submap->getBanks() << ")";            
+            std::cout << std::endl;
+        }
     }
     else
     {
@@ -476,6 +487,7 @@ void Console::doCPUStop(std::vector<std::string> args)
 void Console::doCPUShowOpcodes(std::vector<std::string> args)
 {
     bool errors = false;
+    int defined_opcodes = 0;
     Arch6502::OpCodes::LUT::init();
 
     std::size_t code_count = Arch6502::OpCodes::LUT::codes.size();
@@ -497,11 +509,12 @@ void Console::doCPUShowOpcodes(std::vector<std::string> args)
     {
         // Get op func from op code LUT
         Arch6502::OpCodes::OpFunc* opfunc = Arch6502::OpCodes::LUT::codes[opcode];
+        ADDRESS_MODE opcodemode = Arch6502::OpCodes::LUT::modes[opcode];
         if (opfunc != nullptr)
         {
             // Get the addressing modes supported by the op function
             std::vector<Arch6502::OpCodes::OpFunc::OpCodeInfo> opcodeinfos = opfunc->getOpCodeInfos();
-            ADDRESS_MODE opcodemode = Arch6502::OpCodes::LUT::modes[opcode];
+            bool found = false;
             // Find the registered address mode for current opcode
             for (auto& opcodeinfo : opcodeinfos)
             {
@@ -509,24 +522,29 @@ void Console::doCPUShowOpcodes(std::vector<std::string> args)
                 if (opcodeinfo.mode == opcodemode && opcode == opcodeinfo.code)
                 {
                     std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << opcode << " ";
-                    std::cout << opfunc->getMnemonic() << " - ";
-                    std::cout << std::setw(12) << std::setfill(' ') << Arch6502::getAddressModeString(opcodemode) << " - ";
+                    std::cout << opfunc->getMnemonic() << " [";
+                    std::cout << std::setw(12) << std::setfill(' ') << Arch6502::getAddressModeString(opcodemode) << "] ";
                     std::cout << "\"" << opfunc->getDescription() << "\"" << std::endl;
-                }
-                else
-                {
-                    std::cerr << "OPCODE ERROR: 0x" << std::hex << std::setw(2) << std::setfill('0') << opcode << " ";
-                    std::cerr << Arch6502::getAddressModeString(opcodemode) << " not found but expected." << std::endl;
-                    errors = true;
+                    found = true;
+                    defined_opcodes++;
+                    break;
                 }
             }
+            if (!found)
+            {
+                std::cerr << "OPCODE ERROR: 0x" << std::hex << std::setw(2) << std::setfill('0') << opcode << " ";
+                std::cerr << Arch6502::getAddressModeString(opcodemode) << " not found but expected." << std::endl;
+                errors = true;
+            }
         }
+    }
 
-        // Report if errors were detected
-        if (errors)
-        {
-            std::cout << "Errors were found in opcodes." << std::endl;
-        }
+    std::cout << std::setw(0) << std::dec << defined_opcodes << " opcodes defined." << std::endl;
+
+    // Report if errors were detected
+    if (errors)
+    {
+        std::cout << "Errors were found in opcodes." << std::endl;
     }
 }
 
@@ -608,7 +626,7 @@ void Console::doNESLoad(std::vector<std::string> args)
         }
         std::cout << std::endl;
         std::cout << std::dec << std::setw(0);
-        std::cout << "  PRG-ROM Size: " << cart->getPRGROMSize() << " Banks: " << cart->getPRGROMSize() / (1024*16) << std::endl;
+        std::cout << "  PRG-ROM Size: " << cart->getPRGROMSize() << ", 16K Banks: " << cart->getPRGROMSize() / (1024*16) << std::endl;
         std::cout << "  CHR-ROM Size: " << cart->getCHRROMSize() << std::endl;
         std::cout << "  RAM:" << std::endl;
         std::cout << "    Battery-backed/NV Ram: " << cart->hasNVRam() << std::endl;
@@ -626,5 +644,25 @@ void Console::doNESLoad(std::vector<std::string> args)
     {
         std::cout << "Failed to load \"" << args[0] << "\"" << std::endl;
         delete cart;
+    }
+}
+
+void Console::doNESUnload(std::vector<std::string> args)
+{
+    bool result = false;
+    std::string cartname;
+    const NES::Cart* cart = nes->getCart();
+    if (cart)
+    {
+        cartname = cart->filename;
+    }
+    result = nes->unloadCart();
+    if (result)
+    {
+        std::cout << "Unloaded \"" << cartname << "\"";
+    }
+    else
+    {
+        std::cout << "No cart loaded." << std::endl;
     }
 }

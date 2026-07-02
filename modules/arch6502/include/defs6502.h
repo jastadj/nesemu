@@ -7,6 +7,7 @@ namespace Arch6502
     {
         IMPLIED,
         RELATIVE,
+        ACCUMULATOR,
         IMMEDIATE,
         ZERO_PAGE,
         ZERO_PAGE_X,
@@ -14,6 +15,7 @@ namespace Arch6502
         ABSOLUTE,
         ABSOLUTE_X,
         ABSOLUTE_Y,
+        INDIRECT,
         INDIRECT_X,
         INDIRECT_Y,
         ADDR_ERROR

@@ -31,6 +31,7 @@ NES::Cart::Cart(std::string filename):
                 {
                     format = INES;
                 }
+                prg_rom_offset = 0x10;
             }
 
             // If unknown format, delete data

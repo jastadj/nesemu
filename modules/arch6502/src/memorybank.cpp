@@ -41,7 +41,7 @@ const uint8_t MemoryBank::get(std::size_t addr, bool* ok) const
 
 bool MemoryBank::set(std::size_t addr, const uint8_t val)
 {
-    if (addr < m_MemoryBanks.size())
+    if (addr < m_MemorySize)
     {
         *m_MemoryBanks[m_SelectedBank][addr] = val;
         return true;
@@ -51,7 +51,7 @@ bool MemoryBank::set(std::size_t addr, const uint8_t val)
 
 void MemoryBank::fill(const uint8_t val)
 {
-    for (auto i = 0; i < m_MemoryBanks.size(); i++)
+    for (auto i = 0; i < m_MemorySize; i++)
     {
         set(i, val);
     }
@@ -59,7 +59,7 @@ void MemoryBank::fill(const uint8_t val)
 
 void MemoryBank::fillRandom()
 {
-    for (auto i = 0; i < m_MemoryBanks.size(); i++)
+    for (auto i = 0; i < m_MemorySize; i++)
     {
         set(i, rand() % 256);
     }

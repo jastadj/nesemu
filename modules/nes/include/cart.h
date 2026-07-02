@@ -25,6 +25,7 @@ namespace NES
 
         std::string filename;
         std::size_t data_size;
+        std::size_t prg_rom_offset;
         unsigned char* data;
         FORMAT format;
         std::size_t getHeaderSize() const;

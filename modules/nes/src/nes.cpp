@@ -3,6 +3,7 @@
 #include "nesdefs.h"
 #include "cart.h"
 #include "memorymap.h"
+#include "submemorymap.h"
 
 // debug
 #include <iostream>
@@ -26,7 +27,7 @@ NES::Console::Console():
     // 0xfffc = Reset Vector
 
     // PRG-ROM Mapping
-    m_MemoryMaps->addSubMap(0x8000, 0x8000);
+    m_CartBank = m_MemoryMaps->addSubMap(0x8000, 0x8000);
     
 
 
@@ -74,6 +75,35 @@ bool NES::Console::loadCart(NES::Cart * cart)
         unloadCart();
         m_Cart = cart;
 
+        const std::size_t size_16k = (1024 * 16);
+        int prg_rom_chunks = m_Cart->getPRGROMSize() / size_16k;
+        for (int i = 0; i < prg_rom_chunks; i++)
+        {
+            int bank32 = int(i / 2);
+            std::size_t offset = 0;
+            bool mirror = false;
+            // 32k bank
+            if (i % 2 == 0)
+            {
+                m_CartBank->addBank();
+                m_CartBank->selectBank(i + 1);
+                mirror = (i == prg_rom_chunks - 1);
+            }
+            else
+            {
+                offset = 0x4000;
+            }
+
+            for (auto b = 0; b < size_16k; b++)
+            {
+                m_CartBank->set(b + offset, m_Cart->data[m_Cart->prg_rom_offset + (i * size_16k) + b]);
+                if (mirror)
+                {
+                    m_CartBank->set(b + 0x4000, m_Cart->data[m_Cart->prg_rom_offset + (i * size_16k) + b]);
+                }
+            }
+        }
+        m_CartBank->selectBank(1);
         return true;
     }
     return false;
@@ -81,6 +111,11 @@ bool NES::Console::loadCart(NES::Cart * cart)
 
 bool NES::Console::unloadCart()
 {
+    while(m_CartBank->getBanks() > 1)
+    {
+        m_CartBank->deleteBank();
+    }
+
     if (m_Cart)
     {
         delete m_Cart;
@@ -97,17 +132,17 @@ const NES::Cart* NES::Console::getCart()
 
 uint16_t NES::Console::getNMIVector()
 {
-    return (m_MemoryMaps->get(NES_NMI_ADDR + 1) << 8) | m_MemoryMaps->get(NES_NMI_ADDR + 1);
+    return (m_MemoryMaps->get(NES_NMI_ADDR)) | (m_MemoryMaps->get(NES_NMI_ADDR + 1) << 8);
 }
 
 uint16_t NES::Console::getResetVector()
 {
-    return (m_MemoryMaps->get(NES_RES_ADDR + 1) << 8) | m_MemoryMaps->get(NES_RES_ADDR + 1);
+    return (m_MemoryMaps->get(NES_RES_ADDR)) | (m_MemoryMaps->get(NES_RES_ADDR + 1) << 8);
 }
 
 uint16_t NES::Console::getIRQVector()
 {
-    return (m_MemoryMaps->get(NES_IRQ_ADDR + 1) << 8) | m_MemoryMaps->get(NES_IRQ_ADDR + 1);
+    return (m_MemoryMaps->get(NES_IRQ_ADDR )) | (m_MemoryMaps->get(NES_IRQ_ADDR + 1) << 8);
 }
 
 void NES::Console::onTick()

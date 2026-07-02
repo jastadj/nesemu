@@ -62,7 +62,7 @@ const uint8_t MemoryMap::get(std::size_t addr, bool* ok) const
 
 bool MemoryMap::set(std::size_t addr, const uint8_t val)
 {
-    if (addr < m_MemoryBanks.size())
+    if (addr < m_MemorySize)
     {
         for (auto submap : m_SubMemoryMaps)
         {
