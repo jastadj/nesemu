@@ -23,7 +23,9 @@ target_include_directories(${PROJ_NAME}
 )
 
 target_link_libraries(${PROJ_NAME}
-
+	PRIVATE
+		nes::nes
+		arch6502::arch6502
 )
 
 # Install

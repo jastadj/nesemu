@@ -1,3 +1,6 @@
+#ifndef CPU6502CLOCK_H
+#define CPU6502CLOCK_H
+
 #include "cpuclock.h"
 
 #include <functional>
@@ -12,3 +15,5 @@ public:
 
     std::function<void()> onTickCallback;
 };
+
+#endif

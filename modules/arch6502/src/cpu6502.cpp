@@ -5,6 +5,7 @@
 // debug
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 
 using namespace Arch6502;
 
@@ -133,7 +134,7 @@ uint8_t CPU::popStack()
 
 void Arch6502::CPU::resetStack()
 {
-    m_StackPtr = 0xff;
+    m_StackPtr = 0xfd;
 }
 
 const uint16_t CPU::getPC() const
@@ -287,7 +288,10 @@ uint16_t CPU::decodeAddress(uint16_t& addr, ADDRESS_MODE address_mode, int& extr
         }
         break;
         default:
-            std::cout << "Error decoding address @ 0x" << std::hex << addr << ", unhandled mode : " << address_mode << "\"" << getAddressModeString(address_mode) << "\"" << std::endl;
+            uint8_t val = m_MemoryMaps->get(addr);
+            std::cout << "Error decoding address @ 0x" << std::hex << std::setw(4) << std::setfill('0') << addr;
+            std::cout << ", val 0x" << std::hex << std::setw(2) << std::setfill('0') << int(val);
+            std::cout << ", unhandled mode : " << std::dec << std::setw(0) << std::setfill(' ') << address_mode << " \"" << getAddressModeString(address_mode) << "\"" << std::endl;
             break;
         }
     }

@@ -4,6 +4,7 @@
 
 // Debug
 #include <iostream>
+#include <iomanip>
 
 MemoryMap::MemoryMap(std::size_t init_size):
     MemoryBank(init_size)
@@ -23,15 +24,20 @@ MemoryMap::~MemoryMap()
 
 bool MemoryMap::addMirror(std::size_t source_addr, std::size_t dest_addr, std::size_t len)
 {
-    if ((source_addr + len > m_MemoryBanks.size()) || (dest_addr + len > m_MemoryBanks.size()))
+    // Check for mirror range validity
+    if (m_MemoryBanks.empty() || (source_addr + len > m_MemoryBanks[0].size()) || (dest_addr + len > m_MemoryBanks[0].size()))
     {
+        std::cerr << "Error adding mirror source 0x" << std::hex << std::setw(4) << std::setfill('0') << source_addr;
+        std::cerr << " dest 0x" << std::hex << dest_addr;
+        std::cerr << " len " << std::dec << std::setw(0) << len;
+        std::cerr << " bank_size " << m_MemoryBanks[0].size() << std::endl;
         return false;
     }
 
     // Delete destination map and replace with source pointer
     for (auto i = 0; i < len; i++)
     {
-        m_MemoryBanks[dest_addr + i] = m_MemoryBanks[source_addr + i];
+        m_MemoryBanks[0][dest_addr + i] = m_MemoryBanks[0][source_addr + i];
     }
     return true;
 }

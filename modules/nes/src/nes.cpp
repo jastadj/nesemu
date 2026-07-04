@@ -4,13 +4,16 @@
 #include "cart.h"
 #include "memorymap.h"
 #include "submemorymap.h"
+#include "ppu.h"
 
 // debug
 #include <iostream>
 
 NES::Console::Console():
-    m_Clock(NES_CLOCK_HZ),
-    m_Cart(nullptr)
+    m_PPUClock(NES_PPU_CLOCK_HZ),
+    m_Cart(nullptr),
+    m_Ticks(0),
+    m_DebugBreak(false)
 {
     // Create Memory Map
     m_MemoryMaps = new MemoryMap(1024 * 64);
@@ -19,6 +22,13 @@ NES::Console::Console():
     m_MemoryMaps->addMirror(0x0000, 0x0800, 0x0800);
     m_MemoryMaps->addMirror(0x0000, 0x1000, 0x0800);
     m_MemoryMaps->addMirror(0x0000, 0x1800, 0x0800);
+
+    // Init PPU Register Mirrors
+    // 0x2000 to 0x3fff are mirrored every 8 bytes for PPU registers
+    for (int i = 1; i <= 0x3ff; i++)
+    {
+        m_MemoryMaps->addMirror(0x2000, 0x2000 + (i * 8), 8);
+    }
 
     // Other Memory
     // 0x6000 - 0x7fff = NV RAM / Battery Back RAM
@@ -29,14 +39,14 @@ NES::Console::Console():
     // PRG-ROM Mapping
     m_CartBank = m_MemoryMaps->addSubMap(0x8000, 0x8000);
     
-
-
     // Assign Memory Map to CPU
     m_CPU.setMemoryMap(m_MemoryMaps);
 
+    // Instantaite PPU
+    m_PPU = new PPU(this);
 
     // Set Clock Tick Callback
-    m_Clock.onTickCallback = [&]() {onTick(); };    
+    m_PPUClock.onTickCallback = [&]() { onTick(); };    
 }
 
 NES::Console::~Console()
@@ -51,21 +61,34 @@ void NES::Console::on()
 
 void NES::Console::off()
 {
-    m_Clock.stop();
+    m_PPUClock.stop();
 }
 
 void NES::Console::reset()
 {
-    m_Clock.stop();
-    m_WaitCycles = 0;
+    m_PPUClock.stop();
+
+    // Init
+    m_CPUWaitCycles = 0;
     m_CPU.setPC(getResetVector());
     m_CPU.resetStack();
-    m_Clock.start();   
+    m_CPU.setStatusBit(Arch6502::STATUS_BIT::STATUS_INTERRUPT, true);
+    m_PPU->setPPUCTRL(0);
+    m_PPU->setPPUMASK(0);
+    m_PPU->setPPUSTATUS(m_PPU->getPPUSTATUS() & 0x80);
+    m_PPU->setPPUSCROLL(0);
+    m_PPU->setPPUDATA(0);
+    
+    // Ready
+    if(!m_DebugBreak)
+    {
+        m_PPUClock.start();
+    }
 }
 
 bool NES::Console::isOn()
 {
-    return m_Clock.isRunning();
+    return m_PPUClock.isRunning();
 }
 
 bool NES::Console::loadCart(NES::Cart * cart)
@@ -145,14 +168,61 @@ uint16_t NES::Console::getIRQVector()
     return (m_MemoryMaps->get(NES_IRQ_ADDR )) | (m_MemoryMaps->get(NES_IRQ_ADDR + 1) << 8);
 }
 
+unsigned long long NES::Console::getTicks()
+{
+    unsigned long long result;
+    m_TickMutex.lock();
+    result = m_Ticks;
+    m_TickMutex.unlock();
+    return result;
+}
+
+unsigned long long NES::Console::getCPUClockHz()
+{
+    return NES_CPU_CLOCK_HZ;
+}
+
+unsigned long long NES::Console::getPPUClockHz()
+{
+    return NES_PPU_CLOCK_HZ;
+}
+
+void NES::Console::setDebugBreak(bool enabled)
+{
+    if (enabled)
+    {
+        m_PPUClock.stop();
+    }
+    m_DebugBreak = enabled;
+}
+
+bool NES::Console::getDebugBreak()
+{
+    return m_DebugBreak;
+}
+
 void NES::Console::onTick()
 {
-    if (m_WaitCycles)
+    m_TickMutex.lock();
+
+    // If executing a CPU cycle (CPU runs x3 slower than PPU)
+    if (m_Ticks % 3 == 0)
     {
-        m_WaitCycles--;
+        if (m_CPUWaitCycles)
+        {
+            m_CPUWaitCycles--;
+        }
+        else
+        {
+            m_CPUWaitCycles = m_CPU.execute() - 1;
+        }
     }
-    else
-    {
-        m_WaitCycles = m_CPU.execute() - 1;
-    }
+    
+    // PPU (should this be executed before or after CPU for this cycle?)
+    // ...
+
+    // Done
+    m_Ticks++;
+    m_TickMutex.unlock();
 }
+

@@ -94,6 +94,7 @@ private:
     static void doNESShow(std::vector<std::string> args);
     static void doNESLoad(std::vector<std::string> args);
     static void doNESUnload(std::vector<std::string> args);
+    static void doNESDebug(std::vector<std::string> args);
 
 };
 

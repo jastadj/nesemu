@@ -56,6 +56,7 @@ Console::Console():
     m_Commands.back().sub_commands.emplace_back(Command("reset", "Reset NES", doNESReset));
     m_Commands.back().sub_commands.emplace_back(Command("load", "Load ROM", doNESLoad, 1, 1));
     m_Commands.back().sub_commands.emplace_back(Command("unload", "Unload ROM", doNESUnload, 0, 0));
+    m_Commands.back().sub_commands.emplace_back(Command("debug", "NES Debug Mode (usage: debug <0|1>", doNESDebug, 1, 1));
 }
 
 Console::~Console()
@@ -421,14 +422,12 @@ void Console::doCPUShow(std::vector<std::string> args)
 {
     std::cout << "CPU" << std::endl;
     std::cout << "===" << std::endl;
-    std::cout << "Clock Speed........: " << nes->m_Clock.getClockSpeed() << " Hz";
-    std::cout << std::setprecision(4) << " (" << nes->m_Clock.getClockSpeed() * 1e-6 << " MHz)" << std::endl;
-    std::cout << "Cycle Speed........: " << 1e9 / nes->m_Clock.getClockSpeed() << " ns" << std::endl;
-    std::cout << "Process Batches/Sec: " << nes->m_Clock.getBatchesPerSec() << std::endl;
-    std::cout << "Cycles/Batch.......: " << nes->m_Clock.getCyclesPerBatch() << std::endl;
+    std::cout << "Clock Speed........: " << nes->getCPUClockHz() << " Hz";
+    std::cout << std::setprecision(4) << " (" << nes->getCPUClockHz() * 1e-6 << " MHz)" << std::endl;
+    std::cout << "Cycle Speed........: " << 1e9 / nes->getCPUClockHz() << " ns" << std::endl;
     std::cout << "Memory Map Assigned: " << Tools::getYesNo(nes->m_CPU.hasMemoryMap()) << std::endl;
-    std::cout << "Running............: " << Tools::getYesNo(nes->m_Clock.isRunning()) << std::endl;
-    std::cout << "Ticks..............: " << nes->m_Clock.getTicks() << std::endl;
+    std::cout << "Running............: " << Tools::getYesNo(nes->m_PPUClock.isRunning()) << std::endl;
+    std::cout << "Ticks..............: " << nes->m_PPUClock.getTicks() << std::endl;
     std::cout << "Registers" << std::endl;
     std::cout << "---------" << std::endl;
     std::cout << "      PC: 0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->m_CPU.getPC()) << std::endl;
@@ -465,6 +464,7 @@ void Console::doCPUExecute(std::vector<std::string> args)
         std::cout << " @ 0x" << std::hex << std::setw(4) << std::setfill('0') << int(addr);
         std::cout << " in " << cycles << " cycle(s)" << std::endl;
     }
+    m_Instance->parseCommand("cpu show");
 }
 
 void Console::doCPUPC(std::vector<std::string> args)
@@ -476,12 +476,12 @@ void Console::doCPUPC(std::vector<std::string> args)
 
 void Console::doCPUStart(std::vector<std::string> args)
 {
-    std::cout << "CPU Started: " << Tools::getYesNo(nes->m_Clock.start()) << std::endl;
+    std::cout << "CPU Started: " << Tools::getYesNo(nes->m_PPUClock.start()) << std::endl;
 }
 
 void Console::doCPUStop(std::vector<std::string> args)
 {
-    std::cout << "CPU Stopped: " << Tools::getYesNo(nes->m_Clock.stop()) << std::endl;
+    std::cout << "CPU Stopped: " << Tools::getYesNo(nes->m_PPUClock.stop()) << std::endl;
 }
 
 void Console::doCPUShowOpcodes(std::vector<std::string> args)
@@ -586,19 +586,22 @@ void Console::doNESShow(std::vector<std::string> args)
     const NES::Cart* cart = nes->getCart();
     std::cout << "NES" << std::endl;
     std::cout << "---" << std::endl;
-    std::cout << "NES_CLOCK_HZ: " << NES_CLOCK_HZ << " Hz" << std::endl;
-    std::cout << "On..........: " << Tools::getYesNo(nes->isOn()) << std::endl;
-    std::cout << "Memory Size.: " << nes->m_MemoryMaps->size() << std::endl;
-    std::cout << "NMI Vector..: ";
+    std::cout << "NES_CPU_CLOCK_HZ: " << NES_CPU_CLOCK_HZ << " Hz" << std::endl;
+    std::cout << "NES_PPU_CLOCK_HZ: " << NES_CPU_CLOCK_HZ * 3 << " Hz (x3 CPU)" << std::endl;
+    std::cout << "On..............: " << Tools::getYesNo(nes->isOn()) << std::endl;
+    std::cout << "Debug Mode......: " << nes->getDebugBreak() << std::endl;
+    std::cout << "Ticks...........: " << nes->getTicks() << std::endl;
+    std::cout << "Memory Size.....: " << nes->m_MemoryMaps->size() << std::endl;
+    std::cout << "NMI Vector......: ";
     std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << NES_NMI_ADDR << " => ";
     std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->getNMIVector()) << std::endl;
-    std::cout << "Reset Vector: ";
+    std::cout << "Reset Vector....: ";
     std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << NES_RES_ADDR << " => ";
     std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->getResetVector()) << std::endl;
-    std::cout << "IRQ Vector..: ";
+    std::cout << "IRQ Vector......: ";
     std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << NES_IRQ_ADDR << " => ";
     std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0') << int(nes->getIRQVector()) << std::endl;
-    std::cout << "Cart: " << Tools::getYesNo(cart != nullptr) << " ";
+    std::cout << "Cart............: " << Tools::getYesNo(cart != nullptr) << " ";
     if (cart)
     {
         std::cout << "\"" << cart->filename << "\"";
@@ -665,4 +668,11 @@ void Console::doNESUnload(std::vector<std::string> args)
     {
         std::cout << "No cart loaded." << std::endl;
     }
+}
+
+void Console::doNESDebug(std::vector<std::string> args)
+{
+    bool enabled = Tools::toInt(args[0]);
+    std::cout << "Setting NES debug mode to " << enabled << std::endl;
+    nes->setDebugBreak(enabled);
 }

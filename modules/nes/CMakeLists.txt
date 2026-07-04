@@ -29,6 +29,8 @@ target_include_directories(${PROJ_NAME}
 target_link_libraries(${PROJ_NAME}
 	PUBLIC
 		arch6502::arch6502
+	PRIVATE
+		nes::ppu
 )
 
 # Install
