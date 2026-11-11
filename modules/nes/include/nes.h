@@ -10,6 +10,7 @@ namespace NES
 {
     class Cart;
     class PPU;
+    class APU;
 
     class Console
     {
@@ -45,6 +46,7 @@ namespace NES
         // Debug
         void setDebugBreak(bool enabled);
         bool getDebugBreak();
+        void APUTest();
 
     private:
         
@@ -61,6 +63,9 @@ namespace NES
 
         // PPU
         PPU* m_PPU;
+
+        // APU
+        APU* m_APU;
     };
 }
 #endif

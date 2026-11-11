@@ -5,6 +5,7 @@
 #include "memorymap.h"
 #include "submemorymap.h"
 #include "ppu.h"
+#include "apu.h"
 
 // debug
 #include <iostream>
@@ -47,6 +48,9 @@ NES::Console::Console():
 
     // Set Clock Tick Callback
     m_PPUClock.onTickCallback = [&]() { onTick(); };    
+
+    // APU
+    m_APU = new APU();
 }
 
 NES::Console::~Console()
@@ -199,6 +203,11 @@ void NES::Console::setDebugBreak(bool enabled)
 bool NES::Console::getDebugBreak()
 {
     return m_DebugBreak;
+}
+
+void NES::Console::APUTest()
+{
+    APU::test();
 }
 
 void NES::Console::onTick()

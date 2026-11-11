@@ -4,6 +4,7 @@ set(PROJ_NAMESPACE "nes")
 # Project Source
 set(PROJ_SOURCE
 	src/apu.cpp
+	${CMAKE_SOURCE_DIR}/thirdparty/miniaudio/miniaudio.c
 )
 
 set(PROJ_HEADERS
@@ -11,6 +12,7 @@ set(PROJ_HEADERS
 
 set(PROJ_PUBLIC_HEADERS
 	include/apu.h
+	${CMAKE_SOURCE_DIR}/thirdparty/miniaudio/miniaudio.c
 )
 
 add_library(${PROJ_NAME} STATIC ${PROJ_SOURCE} ${PROJ_HEADERS} ${PROJ_PUBLIC_HEADERS})
@@ -20,6 +22,8 @@ target_include_directories(${PROJ_NAME}
 	PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+	PRIVATE
+		${CMAKE_SOURCE_DIR}/thirdparty/miniaudio
 )
 
 target_link_libraries(${PROJ_NAME}

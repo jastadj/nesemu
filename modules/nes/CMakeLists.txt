@@ -31,6 +31,7 @@ target_link_libraries(${PROJ_NAME}
 		arch6502::arch6502
 	PRIVATE
 		nes::ppu
+		nes::apu
 )
 
 # Install

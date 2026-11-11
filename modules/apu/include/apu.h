@@ -5,7 +5,10 @@ namespace NES
 {
     class APU
     {
+    public:
+        APU();
 
+        static void test();
     };
 }
 
